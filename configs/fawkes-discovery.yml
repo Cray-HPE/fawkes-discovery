@@ -1,0 +1,11 @@
+######################
+# Discovery Server api
+######################
+bind: ":8080"
+
+######################
+# MongoDB
+######################
+mongoserver: "127.0.0.1:27017"
+database: "discovery"
+collection: "lshw"
