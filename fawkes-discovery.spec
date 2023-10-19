@@ -51,7 +51,7 @@ Provides:  %{name} = %{version}
 install -d %{buildroot}%{_bindir}
 install -p -m 0755 %{name} %{buildroot}%{_bindir}/%{name}
 install -d %{buildroot}%{_sysconfdir}/%{name}
-install -p -m 0644 configs/%{name}.yml %{buildroot}%{_sysconfdir}/%{name}/%{name}.yml
+install -p -m 0644 configs/%{name}.yml %{buildroot}%{_sysconfdir}/%{name}/
 
 %clean
 rm %{name}
@@ -59,6 +59,6 @@ rm -rf download
 
 %files
 %{_bindir}/%{name}
-%{buildroot}%{_sysconfdir}/%{name}/%{name}.yml
+%{_sysconfdir}/%{name}/%{name}.yml
 %defattr(-,root,root,-)
 %doc LICENSE
