@@ -51,7 +51,7 @@ Provides:  %{name} = %{version}
 install -d %{buildroot}%{_bindir}
 install -p -m 0755 %{name} %{buildroot}%{_bindir}/%{name}
 install -d %{buildroot}%{_sysconfdir}/%{name}
-install -p -m 0644 configs/%{name}.yml %{buildroot}%{_sysconfdir}/%{name}/
+install -p -m 0644 configs/%{name}.yml %{buildroot}%{_sysconfdir}/%{name}/%{name}.yml
 
 %clean
 rm %{name}
