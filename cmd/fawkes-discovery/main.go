@@ -17,8 +17,10 @@ func main() {
 	// Read yaml config
 	config := viper.New()
 	config.SetConfigType("yaml")
-	config.SetConfigName("discovery-server")
-	config.AddConfigPath("./configs")
+	config.SetConfigName("fawkes-discovery")
+	config.AddConfigPath("/etc/fawkes-discovery")
+	config.AddConfigPath("$HOME/.fawkes-discovery")
+	config.AddConfigPath(".")
 	err := config.ReadInConfig()
 	if err != nil {
 		log.Fatal(err)
