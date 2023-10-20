@@ -34,7 +34,6 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	config.WatchConfig()
 	config.BindPFlags(flag.CommandLine)
 	log.Println("Configuration file used: ", config.ConfigFileUsed())
 
@@ -62,4 +61,3 @@ func main() {
 
 	utils.CloseDBconn(dbClient)
 }
-
