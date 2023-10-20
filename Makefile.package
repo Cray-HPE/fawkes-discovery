@@ -55,6 +55,7 @@ BUILD_DIR ?= $(PWD)/dist/rpmbuild
 SOURCE_PATH := ${BUILD_DIR}/SOURCES/${SOURCE_NAME}.tar.bz2
 
 rpm: rpm_package_source rpm_build_source rpm_build
+image: container
 
 prepare:
 	@echo $(NAME)
@@ -72,6 +73,9 @@ rpm_build_source:
 
 rpm_build:
 	rpmbuild -ba $(BUILD_DIR)/SPECS/$(SPEC_FILE) --target ${ARCH} --define "_topdir $(BUILD_DIR)"
+
+container:
+	echo "placeholder"
 
 .PHONY: clean
 
