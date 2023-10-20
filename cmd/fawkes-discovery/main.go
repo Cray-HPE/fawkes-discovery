@@ -14,26 +14,29 @@ import (
 )
 
 func main() {
-	// Read yaml config
-	config := viper.New()
-	config.SetConfigType("yaml")
-	config.SetConfigName("fawkes-discovery")
-	config.AddConfigPath("/etc/fawkes-discovery")
-	config.AddConfigPath("$HOME/.fawkes-discovery")
-	config.AddConfigPath(".")
-	err := config.ReadInConfig()
-	if err != nil {
-		log.Fatal(err)
-	}
-	config.WatchConfig()
-
 	// Parse cli flags
 	flag.StringP("bind", "b", ":8080", "Bind address")
 	flag.StringP("mongoserver", "s", "", "Mongo ip:port")
 	flag.StringP("database", "d", "", "Mongo database to use")
 	flag.StringP("collection", "c", "", "Mongo collection to use")
+	flag.StringP("config", "f", "", "Path to configuration file")
 	flag.Parse()
+
+	// Read yaml config
+	config := viper.New()
+	config.SetConfigType("yaml")
+	config.SetConfigName("fawkes-discovery")
+	config.AddConfigPath(flag.Lookup("config").Value.String())
+	config.AddConfigPath("/etc/fawkes-discovery")
+	config.AddConfigPath(".")
+
+	err := config.ReadInConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
+	config.WatchConfig()
 	config.BindPFlags(flag.CommandLine)
+	log.Println("Configuration file used: ", config.ConfigFileUsed())
 
 	// Set up variables from config/flags
 	bind := config.GetString("bind")
@@ -59,3 +62,4 @@ func main() {
 
 	utils.CloseDBconn(dbClient)
 }
+
