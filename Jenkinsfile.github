@@ -83,7 +83,7 @@ pipeline {
                         steps {
                             lock('docker-image-pull') {
                                 sh "docker pull --platform linux/${DOCKER_ARCH} ${sleImage}"
-                                sh "docker tag ${sleImage}:latest ${sleImage}:${DOCKER_ARCH}"
+                                sh "docker tag ${sleImage} ${sleImage}:${DOCKER_ARCH}"
                             }
                         }
                     }
