@@ -84,13 +84,13 @@ func PostMachine(dbClient *mongo.Client, database string, collection string) gin
 		var bdoc map[string]interface{}
 		err := json.Unmarshal([]byte(body), &bdoc)
 		if err != nil {
-			log.Fatal(err)
+			log.Println(err)
 		}
 
 		insertResult, err := collection.InsertOne(context.Background(), &bdoc)
 		log.Println(insertResult)
 		if err != nil {
-			log.Fatal(err)
+			log.Println(err)
 		}
 	}
 
