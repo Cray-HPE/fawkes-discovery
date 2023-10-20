@@ -1,4 +1,4 @@
-module discovery
+module fawkes-discovery/m/v2
 
 go 1.20
 
