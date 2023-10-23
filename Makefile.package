@@ -1,7 +1,7 @@
 #
 # MIT License
 #
-# (C) Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+# (C) Copyright 2023 Hewlett Packard Enterprise Development LP
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -46,7 +46,11 @@ ifeq ($(GOARCH),)
 	endif
 endif
 
-all: rpm
+ifeq ($(TIMESTAMP),)
+export TIMESTAMP := $(shell date '+%Y%m%d%H%M%S')
+endif
+
+all: rpm container_image
 
 SPEC_FILE := ${NAME}.spec
 SOURCE_NAME := ${NAME}-${VERSION}
@@ -55,7 +59,6 @@ BUILD_DIR ?= $(PWD)/dist/rpmbuild
 SOURCE_PATH := ${BUILD_DIR}/SOURCES/${SOURCE_NAME}.tar.bz2
 
 rpm: rpm_package_source rpm_build_source rpm_build
-image: container
 
 prepare:
 	@echo $(NAME)
@@ -74,8 +77,12 @@ rpm_build_source:
 rpm_build:
 	rpmbuild -ba $(BUILD_DIR)/SPECS/$(SPEC_FILE) --target ${ARCH} --define "_topdir $(BUILD_DIR)"
 
-container:
-	echo "placeholder"
+container_image:
+	docker buildx build -t ${NAME}:latest \
+	    -t ${NAME}:latest \
+	    -t ${NAME}:${VERSION} \
+	    -t ${NAME}:${VERSION}-${TIMESTAMP} \
+	    .
 
 .PHONY: clean
 

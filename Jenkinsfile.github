@@ -59,6 +59,8 @@ pipeline {
         NAME = 'fawkes-discovery'
         GITHUB_TOKEN = getGitHubToken()
         PRIMARY_NODE = "${env.NODE_NAME}"
+        VERSION = "${GIT_COMMIT[0..6]}"
+        DOCKER_BUILDKIT = 1
     }
 
     stages {

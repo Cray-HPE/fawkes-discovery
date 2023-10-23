@@ -27,8 +27,8 @@ func main() {
 	config.SetConfigType("yaml")
 	config.SetConfigName("fawkes-discovery")
 	config.AddConfigPath(flag.Lookup("config").Value.String())
-	config.AddConfigPath("/etc/fawkes-discovery")
 	config.AddConfigPath(".")
+	config.AddConfigPath("/etc/fawkes-discovery")
 
 	err := config.ReadInConfig()
 	if err != nil {
