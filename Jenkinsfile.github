@@ -183,10 +183,7 @@ pipeline {
                             script {
                                 // Only overwrite an image if this is a stable build.
                                 if (isStable) {
-                                    /*
-                                    Publish these tags on stable:
-                                        - Major.Minor                   (e.g. 15.4)
-                                    */
+
                                     publishCsmDockerImage(image: env.NAME, isStable: isStable, tag: "${env.VERSION}")
             
                                     // Only publish a latest when on main, never publish a latest for any beta or maint branches.
@@ -194,11 +191,6 @@ pipeline {
                                         publishCsmDockerImage(image: env.NAME, isStable: isStable, tag: "latest")
                                     }
                                 } else {
-                                    /*
-                                    Publish these tags on unstable:
-                                        - Hash                          (e.g. 15.4-dhckj3)
-                                        - Hash-Timestamp                (e.g. 15.4-dhckj3-20221017133121)
-                                    */
                                     publishCsmDockerImage(image: env.NAME, isStable: isStable, tag: "${env.VERSION}")
                                     publishCsmDockerImage(image: env.NAME, isStable: isStable, tag: "${env.VERSION}-${env.TIMESTAMP}")
                                 }
