@@ -172,7 +172,7 @@ pipeline {
                         }
 
                         steps {
-                            sh "cp dist/rpmbuild/${ARCH}/BUILD/${NAME} ./"
+                            sh "cp dist/rpmbuild/${ARCH}/BUILD/${NAME}-${VERSION}/${NAME} ./"
                             sh "make -f Makefile.package container_image"
                         }
                     }
