@@ -84,25 +84,12 @@ pipeline {
                 stages {
 
                     stage('Build: setup') {
+
                         steps {
                             lock('docker-image-pull') {
                                 sh "docker pull --platform linux/${DOCKER_ARCH} ${sleImage}:${goVersion}"
                                 sh "docker tag ${sleImage}:${goVersion} ${sleImage}:${DOCKER_ARCH}"
                             }
-                        }
-                    }
-
-                    stage('Build: binary') {
-                        agent {
-                            docker {
-                                label "${PRIMARY_NODE}"
-                                reuseNode true
-                                args "-v /home/jenkins/.ssh:/home/jenkins/.ssh --platform linux/${DOCKER_ARCH}"
-                                image "${sleImage}:${DOCKER_ARCH}"
-                            }
-                        }
-                        steps {
-                            sh "make ${NAME}"
                         }
                     }
 
@@ -125,7 +112,7 @@ pipeline {
                         }
                     }
 
-                    stage('Build: RPMs') {
+                    stage('Build: SRPM') {
 
                         agent {
                             docker {
@@ -137,10 +124,54 @@ pipeline {
                         }
 
                         steps {
-                            sh "make -f Makefile.package rpm"
+                            sh "make -f Makefile.package rpm_package_source rpm_build_source"
                         }
                     }
 
+                    stage('Build: binary') {
+                        agent {
+                            docker {
+                                label "${PRIMARY_NODE}"
+                                reuseNode true
+                                args "-v /home/jenkins/.ssh:/home/jenkins/.ssh --platform linux/${DOCKER_ARCH}"
+                                image "${sleImage}:${DOCKER_ARCH}"
+                            }
+                        }
+                        steps {
+                            sh "make ${NAME}"
+                        }
+                    }
+
+                    stage('Build: RPM') {
+
+                        agent {
+                            docker {
+                                label "${PRIMARY_NODE}"
+                                reuseNode true
+                                args "-v /home/jenkins/.ssh:/home/jenkins/.ssh --platform linux/${DOCKER_ARCH}"
+                                image "${sleImage}:${DOCKER_ARCH}"
+                            }
+                        }
+
+                        steps {
+                            sh "make -f Makefile.package rpm_build"
+                        }
+                    }
+                    stage('Build: container image') {
+
+                        agent {
+                            docker {
+                                label "${PRIMARY_NODE}"
+                                reuseNode true
+                                args "-v /home/jenkins/.ssh:/home/jenkins/.ssh --platform linux/${DOCKER_ARCH}"
+                                image "${sleImage}:${DOCKER_ARCH}"
+                            }
+                        }
+
+                        steps {
+                            sh "make -f Makefile.package container_image"
+                        }
+                    }
                     stage('Publish: RPMs') {
 
                         agent {
@@ -169,6 +200,37 @@ pipeline {
                                         os: "noos",
                                         pattern: "dist/rpmbuild/${ARCH}/SRPMS/*.rpm"
                                 )
+                            }
+                        }
+                    }
+
+                    stage('Publish: container image') {
+
+                        steps {
+
+                            script {
+
+                                // Only overwrite an image if this is a stable build.
+                                if (isStable) {
+                                    /*
+                                    Publish these tags on stable:
+                                        - Major.Minor                   (e.g. 15.4)
+                                    */
+                                    publishCsmDockerImage(image: env.NAME, isStable: isStable, tag: "${env.VERSION}")
+            
+                                    // Only publish a latest when on main, never publish a latest for any beta or maint branches.
+                                    if (env.BRANCH_NAME == 'main') {
+                                        publishCsmDockerImage(image: env.NAME, isStable: isStable, tag: "latest")
+                                    }
+                                } else {
+                                    /*
+                                    Publish these tags on unstable:
+                                        - Hash                          (e.g. 15.4-dhckj3)
+                                        - Hash-Timestamp                (e.g. 15.4-dhckj3-20221017133121)
+                                    */
+                                    publishCsmDockerImage(image: env.NAME, isStable: isStable, tag: "${env.VERSION}")
+                                    publishCsmDockerImage(image: env.NAME, isStable: isStable, tag: "${env.VERSION}-${env.TIMESTAMP}")
+                                }
                             }
                         }
                     }
