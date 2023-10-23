@@ -57,10 +57,6 @@ install -p -m 0755 %{name} %{buildroot}%{_bindir}/%{name}
 install -d %{buildroot}%{_sysconfdir}/%{name}
 install -p -m 0644 configs/%{name}.yml %{buildroot}%{_sysconfdir}/%{name}/
 
-%clean
-rm %{name}
-rm -rf download
-
 %files
 %{_bindir}/%{name}
 %{_sysconfdir}/%{name}/%{name}.yml
