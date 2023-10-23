@@ -43,9 +43,13 @@ Provides:  %{name} = %{version}
 %endif
 
 %description
+An http endpoint for bare metal hardware data.
 
 %prep
 %setup -q
+
+%build
+make %{name}
 
 %install
 install -d %{buildroot}%{_bindir}

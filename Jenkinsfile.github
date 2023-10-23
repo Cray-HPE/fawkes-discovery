@@ -112,36 +112,6 @@ pipeline {
                         }
                     }
 
-                    stage('Build: SRPM') {
-
-                        agent {
-                            docker {
-                                label "${PRIMARY_NODE}"
-                                reuseNode true
-                                args "-v /home/jenkins/.ssh:/home/jenkins/.ssh --platform linux/${DOCKER_ARCH}"
-                                image "${sleImage}:${DOCKER_ARCH}"
-                            }
-                        }
-
-                        steps {
-                            sh "make -f Makefile.package rpm_package_source rpm_build_source"
-                        }
-                    }
-
-                    stage('Build: binary') {
-                        agent {
-                            docker {
-                                label "${PRIMARY_NODE}"
-                                reuseNode true
-                                args "-v /home/jenkins/.ssh:/home/jenkins/.ssh --platform linux/${DOCKER_ARCH}"
-                                image "${sleImage}:${DOCKER_ARCH}"
-                            }
-                        }
-                        steps {
-                            sh "make ${NAME}"
-                        }
-                    }
-
                     stage('Build: RPM') {
 
                         agent {
@@ -154,24 +124,10 @@ pipeline {
                         }
 
                         steps {
-                            sh "make -f Makefile.package rpm_build"
+                            sh "make -f Makefile.package rpm"
                         }
                     }
-                    stage('Build: container image') {
 
-                        agent {
-                            docker {
-                                label "${PRIMARY_NODE}"
-                                reuseNode true
-                                args "-v /home/jenkins/.ssh:/home/jenkins/.ssh --platform linux/${DOCKER_ARCH}"
-                                image "${sleImage}:${DOCKER_ARCH}"
-                            }
-                        }
-
-                        steps {
-                            sh "make -f Makefile.package container_image"
-                        }
-                    }
                     stage('Publish: RPMs') {
 
                         agent {
@@ -204,12 +160,27 @@ pipeline {
                         }
                     }
 
+                    stage('Build: container image') {
+
+                        agent {
+                            docker {
+                                label "${PRIMARY_NODE}"
+                                reuseNode true
+                                args "-v /home/jenkins/.ssh:/home/jenkins/.ssh --platform linux/${DOCKER_ARCH}"
+                                image "${sleImage}:${DOCKER_ARCH}"
+                            }
+                        }
+
+                        steps {
+                            sh "cp dist/rpmbuild/${ARCH}/BUILD/${NAME} ./"
+                            sh "make -f Makefile.package container_image"
+                        }
+                    }
+
                     stage('Publish: container image') {
 
                         steps {
-
                             script {
-
                                 // Only overwrite an image if this is a stable build.
                                 if (isStable) {
                                     /*
