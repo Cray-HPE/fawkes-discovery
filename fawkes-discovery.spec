@@ -101,7 +101,7 @@ rm -f %{image_tar}
 if [ $1 -eq 0 ] ; then
     podman stop %{name}
     podman rm %{name}
-    podman rmi %{name}
+    podman rmi %{image}
 fi
 
 %files
