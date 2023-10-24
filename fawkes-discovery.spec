@@ -74,8 +74,8 @@ skopeo copy --src-creds=%(echo $ARTIFACTORY_USER:$ARTIFACTORY_TOKEN) docker://%{
 %install
 install -D -m 0644 -t %{buildroot}%{_unitdir} init/%{name}.service
 install -D -m 0755 -t %{buildroot}%{_sbindir} init/%{name}-init.sh
-install -d -m 0644 -t %{buildroot}%{_sysconfdir}/%{name}
-install -p -m 0644 configs/%{name}.yml %{buildroot}%{_sysconfdir}/%{name}/
+install -D -m 0644 -t %{buildroot}%{_sysconfdir}/%{name} configs/%{name}.yml
+
 ln -s %{_sbindir}/service %{buildroot}%{_sbindir}/rc%{name}
 install -D -m 0644 -t %{buildroot}%{imagedir} %{image_tar}
 
