@@ -30,12 +30,13 @@ fi
 FAWKES_DISCOVERY_PIDFILE="$1"
 FAWKES_DISCOVERY_CIDFILE="$2"
 FAWKES_DISCOVERY_CONTAINER_NAME="${3:-fawkes-discovery}"
+FAWKES_DISCOVERY_CONFIG="fawkes-discovery.yml"
 FAWKES_DISCOVERY_IMAGE_NAME="fawkes-discovery"
 
 FAWKES_DISCOVERY_IMAGE_PATH="@@fawkes-discovery-path@@"
 FAWKES_DISCOVERY_IMAGE="@@fawkes-discovery-image@@"
 
-FAWKES_DISCOVERY_VOLUME_MOUNT_CONFIG='/etc/fawkes-discovery:/app:rw,shared'
+FAWKES_DISCOVERY_VOLUME_MOUNT_CONFIG='/etc/fawkes-discovery/${FAWKES_DISCOVERY_CONFIG}:/app/${FAWKES_DISCOVERY_CONFIG}:ro'
 
 command -v podman >/dev/null 2>&1 || { echo >&2 "${0##*/}: command not found: podman"; exit 1; }
 
@@ -74,7 +75,7 @@ podman create \
     --cidfile "$FAWKES_DISCOVERY_CIDFILE" \
     --cgroups=no-conmon \
     --net host \
-    --volume $FAWKES_DISCOVERY_VOLUME_MOUNT_CONFIG \
+    --volume "$FAWKES_DISCOVERY_VOLUME_MOUNT_CONFIG" \
     --name "$FAWKES_DISCOVERY_CONTAINER_NAME" \
     --env GIN_MODE="${GIN_MODE:-release}" \
     "$FAWKES_DISCOVERY_IMAGE"

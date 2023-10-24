@@ -20,13 +20,14 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 Name:          %(echo $NAME)
-License: MIT   MIT License
+License:       MIT License
 Summary:       An http endpoint for bare metal hardware data.
 Version:       %(echo $VERSION)
 Release:       1
 BuildArch:     %(echo $ARCH)
 Source:        %{name}-%{version}.tar.bz2
 Vendor:        Cray Inc.
+Packager:      Cray Inc.
 BuildRequires: coreutils
 BuildRequires: sed
 BuildRequires: skopeo
