@@ -36,7 +36,7 @@ FAWKES_DISCOVERY_IMAGE_NAME="fawkes-discovery"
 FAWKES_DISCOVERY_IMAGE_PATH="@@fawkes-discovery-path@@"
 FAWKES_DISCOVERY_IMAGE="@@fawkes-discovery-image@@"
 
-FAWKES_DISCOVERY_VOLUME_MOUNT_CONFIG='/etc/fawkes-discovery/${FAWKES_DISCOVERY_CONFIG}:/app/${FAWKES_DISCOVERY_CONFIG}:ro'
+FAWKES_DISCOVERY_VOLUME_MOUNT_CONFIG="/etc/fawkes-discovery/${FAWKES_DISCOVERY_CONFIG}:/app/${FAWKES_DISCOVERY_CONFIG}:ro"
 
 command -v podman >/dev/null 2>&1 || { echo >&2 "${0##*/}: command not found: podman"; exit 1; }
 
