@@ -1,27 +1,25 @@
 /*
- *
- *  MIT License
- *
- *  (C) Copyright 2022-2023 Hewlett Packard Enterprise Development LP
- *
- *  Permission is hereby granted, free of charge, to any person obtaining a
- *  copy of this software and associated documentation files (the "Software"),
- *  to deal in the Software without restriction, including without limitation
- *  the rights to use, copy, modify, merge, publish, distribute, sublicense,
- *  and/or sell copies of the Software, and to permit persons to whom the
- *  Software is furnished to do so, subject to the following conditions:
- *
- *  The above copyright notice and this permission notice shall be included
- *  in all copies or substantial portions of the Software.
- *
- *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- *  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
- *  OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
- *  ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- *  OTHER DEALINGS IN THE SOFTWARE.
- *
+ MIT License
+
+ (C) Copyright 2023 Hewlett Packard Enterprise Development LP
+
+ Permission is hereby granted, free of charge, to any person obtaining a
+ copy of this software and associated documentation files (the "Software"),
+ to deal in the Software without restriction, including without limitation
+ the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ and/or sell copies of the Software, and to permit persons to whom the
+ Software is furnished to do so, subject to the following conditions:
+
+ The above copyright notice and this permission notice shall be included
+ in all copies or substantial portions of the Software.
+
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+ THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+ OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+ ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ OTHER DEALINGS IN THE SOFTWARE.
  */
 @Library('csm-shared-library') _
 
@@ -35,12 +33,10 @@ if (env.BRANCH_NAME ==~ ~"^PR-\\d+") {
     echo "Dependabot GitHub action builds are skipped."
     return
 }
-
 // Only main or maint/* branches are stable.
 def promotionToken = ~"(main|release\\/.*)"
 def isStable = env.BRANCH_NAME ==~ promotionToken ? true : false
-def sleImage = 'artifactory.algol60.net/csm-docker/stable/csm-docker-sle-go'
-def goVersion = '1.20'
+def goImage = 'artifactory.algol60.net/csm-docker/stable/csm-docker-sle-go'
 
 pipeline {
 
@@ -56,14 +52,28 @@ pipeline {
     }
 
     environment {
-        NAME = 'fawkes-discovery'
-        GITHUB_TOKEN = getGitHubToken()
+        DOCKER_ARGS = getDockerBuildArgs(name: getRepoName(), description: 'An http endpoint for bare metal hardware data.')
+        NAME = getRepoName()
+        IS_STABLE = "${isStable}"
         PRIMARY_NODE = "${env.NODE_NAME}"
-        VERSION = "${GIT_COMMIT[0..6]}"
-        DOCKER_BUILDKIT = 1
+        GO_VERSION = sh(returnStdout: true, script: 'grep -Eo "^go .*" go.mod | cut -d " " -f2').trim()
+        IMAGE_VERSION = sh(returnStdout: true, script: "git describe --tags | tr -s '-' '_' | sed 's/^v//'").trim()
+        VERSION = sh(returnStdout: true, script: "git describe --tags | tr -s '-' '~' | sed 's/^v//'").trim()
     }
 
     stages {
+
+        stage('Build: Image') {
+            steps {
+                sh "make container_image"
+            }
+        }
+
+        stage('Publish: Image') {
+            steps {
+                publishCsmDockerImage(image: env.NAME, tag: env.IMAGE_VERSION, isStable: isStable)
+            }
+        }
 
         stage('Build & Publish') {
 
@@ -75,6 +85,7 @@ pipeline {
                 }
 
                 axes {
+
                     axis {
                         name 'ARCH'
                         values 'x86_64'
@@ -84,153 +95,83 @@ pipeline {
                 stages {
 
                     stage('Build: setup') {
-
                         steps {
                             lock('docker-image-pull') {
-                                sh "docker pull --platform linux/${DOCKER_ARCH} ${sleImage}:${goVersion}"
-                                sh "docker tag ${sleImage}:${goVersion} ${sleImage}:${DOCKER_ARCH}"
+                                sh "docker pull --platform linux/${DOCKER_ARCH} ${goImage}:${env.GO_VERSION}"
+                                sh "docker tag ${goImage}:${env.GO_VERSION} ${goImage}:${env.GO_VERSION}-${DOCKER_ARCH}"
                             }
                         }
                     }
 
                     stage('Prepare: RPMs') {
-
                         agent {
                             docker {
                                 label "${PRIMARY_NODE}"
                                 reuseNode true
                                 args "-v /home/jenkins/.ssh:/home/jenkins/.ssh --platform linux/${DOCKER_ARCH}"
-                                image "${sleImage}:${DOCKER_ARCH}"
+                                image "${goImage}:${env.GO_VERSION}-${DOCKER_ARCH}"
                             }
                         }
 
                         steps {
-                            sh "make -f Makefile.package prepare"
-                            dir("${env.BUILD_DIR}/SPECS/") {
-                                runLibraryScript("addRpmMetaData.sh", "${env.NAME}.spec")
-                            }
+                            runLibraryScript("addRpmMetaData.sh", "${env.NAME}.spec")
+                            sh "make prepare"
+                            sh "git update-index --assume-unchanged ${env.NAME}.spec"
                         }
                     }
 
-                    stage('Build: SRPM') {
-
+                    stage('Build: RPMs') {
                         agent {
                             docker {
                                 label "${PRIMARY_NODE}"
                                 reuseNode true
                                 args "-v /home/jenkins/.ssh:/home/jenkins/.ssh --platform linux/${DOCKER_ARCH}"
-                                image "${sleImage}:${DOCKER_ARCH}"
+                                image "${goImage}:${env.GO_VERSION}-${DOCKER_ARCH}"
                             }
                         }
 
                         steps {
-                            sh "make -f Makefile.package rpm_package_source rpm_build_source"
-                        }
-                    }
-
-                    stage('Build: binary') {
-                        agent {
-                            docker {
-                                label "${PRIMARY_NODE}"
-                                reuseNode true
-                                args "-v /home/jenkins/.ssh:/home/jenkins/.ssh --platform linux/${DOCKER_ARCH}"
-                                image "${sleImage}:${DOCKER_ARCH}"
-                            }
-                        }
-                        steps {
-                            sh "make ${NAME}"
-                        }
-                    }
-
-                    stage('Build: RPM') {
-
-                        agent {
-                            docker {
-                                label "${PRIMARY_NODE}"
-                                reuseNode true
-                                args "-v /home/jenkins/.ssh:/home/jenkins/.ssh --platform linux/${DOCKER_ARCH}"
-                                image "${sleImage}:${DOCKER_ARCH}"
-                            }
-                        }
-
-                        steps {
-                            sh "make -f Makefile.package rpm_build"
-                        }
-                    }
-                    stage('Build: container image') {
-
-                        agent {
-                            docker {
-                                label "${PRIMARY_NODE}"
-                                reuseNode true
-                                args "-v /home/jenkins/.ssh:/home/jenkins/.ssh --platform linux/${DOCKER_ARCH}"
-                                image "${sleImage}:${DOCKER_ARCH}"
-                            }
-                        }
-
-                        steps {
-                            sh "make -f Makefile.package container_image"
-                        }
-                    }
-                    stage('Publish: RPMs') {
-
-                        agent {
-                            docker {
-                                label "${PRIMARY_NODE}"
-                                reuseNode true
-                                args "-v /home/jenkins/.ssh:/home/jenkins/.ssh --platform linux/${DOCKER_ARCH}"
-                                image "${sleImage}:${DOCKER_ARCH}"
-                            }
-                        }
-                        steps {
-                            script {
-                                publishCsmRpms(
-                                        artifactoryRepo: 'fawkes-rpms',
-                                        arch: "${ARCH}",
-                                        component: "${env.NAME}",
-                                        isStable: isStable,
-                                        os: "noos",
-                                        pattern: "dist/rpmbuild/${ARCH}/RPMS/${ARCH}/*.rpm"
-                                )
-                                publishCsmRpms(
-                                        artifactoryRepo: 'fawkes-rpms',
-                                        arch: "src",
-                                        component: "${env.NAME}",
-                                        isStable: isStable,
-                                        os: "noos",
-                                        pattern: "dist/rpmbuild/${ARCH}/SRPMS/*.rpm"
-                                )
-                            }
-                        }
-                    }
-
-                    stage('Publish: container image') {
-
-                        steps {
-
-                            script {
-
-                                // Only overwrite an image if this is a stable build.
-                                if (isStable) {
-                                    /*
-                                    Publish these tags on stable:
-                                        - Major.Minor                   (e.g. 15.4)
-                                    */
-                                    publishCsmDockerImage(image: env.NAME, isStable: isStable, tag: "${env.VERSION}")
-            
-                                    // Only publish a latest when on main, never publish a latest for any beta or maint branches.
-                                    if (env.BRANCH_NAME == 'main') {
-                                        publishCsmDockerImage(image: env.NAME, isStable: isStable, tag: "latest")
-                                    }
-                                } else {
-                                    /*
-                                    Publish these tags on unstable:
-                                        - Hash                          (e.g. 15.4-dhckj3)
-                                        - Hash-Timestamp                (e.g. 15.4-dhckj3-20221017133121)
-                                    */
-                                    publishCsmDockerImage(image: env.NAME, isStable: isStable, tag: "${env.VERSION}")
-                                    publishCsmDockerImage(image: env.NAME, isStable: isStable, tag: "${env.VERSION}-${env.TIMESTAMP}")
+                            withCredentials([
+                                    usernamePassword(
+                                            credentialsId: 'artifactory-algol60-readonly',
+                                            usernameVariable: 'ARTIFACTORY_USER',
+                                            passwordVariable: 'ARTIFACTORY_TOKEN'
+                                    )
+                            ]) {
+                                script {
+                                    sh "make rpm"
                                 }
+                            }
+                        }
+                    }
+
+                    stage('Publish: RPMs') {
+                        agent {
+                            docker {
+                                label "${PRIMARY_NODE}"
+                                reuseNode true
+                                args "-v /home/jenkins/.ssh:/home/jenkins/.ssh --platform linux/${DOCKER_ARCH}"
+                                image "${goImage}:${env.GO_VERSION}-${DOCKER_ARCH}"
+                            }
+                        }
+
+                        steps {
+                            script {
+                                def sleVersion = sh(returnStdout: true, script: 'awk -F= \'/VERSION_ID/{gsub(/["]/,""); print \$NF}\' /etc/os-release').trim()
+                                publishCsmRpms(
+                                        arch: "${ARCH}",
+                                        component: env.NAME,
+                                        isStable: isStable,
+                                        os: "noos",
+                                        pattern: "dist/rpmbuild/${ARCH}/RPMS/${ARCH}/*.rpm",
+                                )
+                                publishCsmRpms(
+                                        arch: "src",
+                                        component: env.NAME,
+                                        isStable: isStable,
+                                        os: "noos",
+                                        pattern: "dist/rpmbuild/${ARCH}/SRPMS/*.rpm",
+                                )
                             }
                         }
                     }

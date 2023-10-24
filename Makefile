@@ -223,3 +223,52 @@ tidy:
 
 doc:
 	godoc -http=:8080 -index
+
+#############################################################################
+# Package Build Targets
+#############################################################################
+
+ifeq ($(TIMESTAMP),)
+export TIMESTAMP := $(shell date '+%Y%m%d%H%M%S')
+endif
+
+ifeq ($(GO_VERSION),)
+GO_VERSION := $(shell awk -v replace="'" '/goVersion/{gsub(replace,"", $$NF); print $$NF; exit}' Jenkinsfile.github)
+endif
+
+package: container_image rpm
+
+SPEC_FILE := ${NAME}.spec
+SOURCE_NAME := ${NAME}-${VERSION}
+
+BUILD_DIR ?= $(PWD)/dist/rpmbuild
+SOURCE_PATH := ${BUILD_DIR}/SOURCES/${SOURCE_NAME}.tar.bz2
+
+rpm: rpm_package_source rpm_build_source rpm_build
+
+prepare:
+	@echo $(NAME)
+	rm -rf $(BUILD_DIR)
+	mkdir -p $(BUILD_DIR)/SPECS $(BUILD_DIR)/SOURCES
+	cp $(SPEC_FILE) $(BUILD_DIR)/SPECS/
+
+# touch the archive before creating it to prevent 'tar: .: file changed as we read it' errors
+rpm_package_source:
+	touch $(SOURCE_PATH)
+	tar --transform 'flags=r;s,^,/$(SOURCE_NAME)/,' --exclude .nox --exclude dist/rpmbuild --exclude ${SOURCE_NAME}.tar.bz2 -cvjf $(SOURCE_PATH) .
+
+rpm_build_source:
+	rpmbuild -bs $(BUILD_DIR)/SPECS/$(SPEC_FILE) --target ${ARCH} --define "_topdir $(BUILD_DIR)"
+
+rpm_build:
+	rpmbuild -ba $(BUILD_DIR)/SPECS/$(SPEC_FILE) --target ${ARCH} --define "_topdir $(BUILD_DIR)"
+
+container_image:
+	docker build --pull \
+	    ${DOCKER_ARGS} \
+	    --build-arg NAME=${NAME} \
+		--build-arg GO_VERSION="${GO_VERSION}" \
+	    -t ${NAME}:latest \
+	    -t ${NAME}:${VERSION} \
+	    -t ${NAME}:${VERSION}-${TIMESTAMP} \
+	    .

@@ -20,9 +20,20 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
+ARG         GO_VERSION
+FROM        artifactory.algol60.net/csm-docker/stable/csm-docker-sle-go:${GO_VERSION} as builder
+ARG         NAME
+WORKDIR     /workspace
+COPY        . ./
+
+RUN         CGO_ENABLED=0 \
+            GOOS=linux \
+            GOARCH=amd64 \
+            GO111MODULE=on \
+            make ${NAME}
+
 FROM gcr.io/distroless/base-debian11
-
-COPY fawkes-discovery /
-COPY configs/fawkes-discovery.yml /etc/fawkes-discovery/
-
-ENTRYPOINT ["/fawkes-discovery"]
+WORKDIR     /app
+COPY        configs/fawkes-discovery.yml ./
+COPY        --from=builder /workspace/fawkes-discovery .
+ENTRYPOINT  ["/app/fawkes-discovery"]
