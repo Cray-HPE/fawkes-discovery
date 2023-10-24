@@ -236,6 +236,10 @@ ifeq ($(GO_VERSION),)
 GO_VERSION := $(shell awk -v replace="'" '/goVersion/{gsub(replace,"", $$NF); print $$NF; exit}' Jenkinsfile.github)
 endif
 
+ifeq ($(IMAGE_VERSION),)
+IMAGE_VERSION := $(shell git describe --tags | tr -s '-' '_' | sed 's/^v//')
+endif
+
 package: container_image rpm
 
 SPEC_FILE := ${NAME}.spec
@@ -269,6 +273,6 @@ container_image:
 	    --build-arg NAME=${NAME} \
 		--build-arg GO_VERSION="${GO_VERSION}" \
 	    -t ${NAME}:latest \
-	    -t ${NAME}:${VERSION} \
-	    -t ${NAME}:${VERSION}-${TIMESTAMP} \
+	    -t ${NAME}:${IMAGE_VERSION} \
+	    -t ${NAME}:${IMAGE_VERSION}-${TIMESTAMP} \
 	    .
