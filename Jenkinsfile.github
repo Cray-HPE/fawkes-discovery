@@ -159,6 +159,7 @@ pipeline {
                             script {
                                 def sleVersion = sh(returnStdout: true, script: 'awk -F= \'/VERSION_ID/{gsub(/["]/,""); print \$NF}\' /etc/os-release').trim()
                                 publishCsmRpms(
+                                        artifactoryRepo: 'fawkes-rpms',
                                         arch: "${ARCH}",
                                         component: env.NAME,
                                         isStable: isStable,
@@ -166,6 +167,7 @@ pipeline {
                                         pattern: "dist/rpmbuild/${ARCH}/RPMS/${ARCH}/*.rpm",
                                 )
                                 publishCsmRpms(
+                                        artifactoryRepo: 'fawkes-rpms',
                                         arch: "src",
                                         component: env.NAME,
                                         isStable: isStable,
