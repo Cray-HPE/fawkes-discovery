@@ -1,0 +1,36 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongodb
+  namespace: mongodb
+  labels:
+    app: mongodb
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongodb
+  template:
+    metadata:
+      labels:
+        app: mongodb
+    spec:
+      hostname: mongodb
+      restartPolicy: Always
+      containers:
+      - name: mongodb
+        image: docker.io/library/mongo
+        restartPolicy: Always
+        volumeMounts:
+        - mountPath: /data/configdb
+          name: mongo-configdb
+        - mountPath: /data/db
+          name: mongo-datadb
+      volumes:
+      - name: mongo-configdb
+        persistentVolumeClaim:
+          claimName: mongo-configdb
+      - name: mongo-datadb
+        persistentVolumeClaim:
+          claimName: mongo-datadb
