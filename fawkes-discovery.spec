@@ -79,7 +79,8 @@ sed -e 's,@@fawkes-discovery-db-image@@,%{image_db},' deployments/discovery-db-t
 install -D -m 0644 -t %{buildroot}%{_sysconfdir}/%{name} configs/%{name}.yml
 install -D -m 0644 -t %{buildroot}%{_sysconfdir}/%{name} deployments/discovery-db.yml
 install -D -m 0644 -t %{buildroot}%{_sysconfdir}/%{name} deployments/discovery-frontend-template.yml
-install -D -m 0644 -t %{buildroot}%{_unitdir}/podman-kube@-etc-fawkes\\x2ddiscovery-discovery\\x2dfrontend.yml.service.d pod-init/override.conf
+install -D -m 0644 -t %{buildroot}%{_unitdir}/podman-kube@-etc-fawkes\\x2ddiscovery-discovery\\x2dfrontend.yml.service.d pod-init/frontend-override.conf
+install -D -m 0644 -t %{buildroot}%{_unitdir}/podman-kube@-etc-fawkes\\x2ddiscovery-discovery\\x2ddb.yml.service.d pod-init/database-override.conf
 install -D -m 0755 -t %{buildroot}%{_sbindir} pod-init/fawkes-discovery-setup.sh
 install -D -m 0644 -t %{buildroot}%{imagedir} %{image_frontend_tar}
 install -D -m 0644 -t %{buildroot}%{imagedir} %{image_db_tar}
@@ -118,10 +119,12 @@ fi
 %license LICENSE
 %doc README.adoc
 %defattr(-,root,root)
+%attr(644, root, root) %{_sysconfdir}/%{name}
 %attr(644, root, root) %{_sysconfdir}/%{name}/%{name}.yml
 %attr(644, root, root) %{_sysconfdir}/%{name}/discovery-db.yml
 %attr(644, root, root) %{_sysconfdir}/%{name}/discovery-frontend-template.yml
-%attr(644, root, root) %{_unitdir}/podman-kube@-etc-fawkes\x2ddiscovery-discovery\x2dfrontend.yml.service.d/override.conf
+%attr(644, root, root) %{_unitdir}/podman-kube@-etc-fawkes\x2ddiscovery-discovery\x2dfrontend.yml.service.d/frontend-override.conf
+%attr(644, root, root) %{_unitdir}/podman-kube@-etc-fawkes\x2ddiscovery-discovery\x2ddb.yml.service.d/database-override.conf
 %attr(755, root, root) %{_sbindir}/fawkes-discovery-setup.sh
 
 %{imagedir}/%{image_frontend_tar}
