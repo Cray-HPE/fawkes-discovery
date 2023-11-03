@@ -116,11 +116,10 @@ fi
 %license LICENSE
 %doc README.adoc
 %defattr(-,root,root)
-%attr(644, root, root) %{_unitdir}/%{name}.service
 %attr(644, root, root) %{_sysconfdir}/%{name}/%{name}.yml
 %attr(644, root, root) %{_sysconfdir}/%{name}/discovery-db.yml
 %attr(644, root, root) %{_sysconfdir}/%{name}/discovery-frontend-template.yml
-%attr(644, root, root) %{_unitdir}/podman-kube@-etc-fawkes\\x2ddiscovery-discovery\\x2dfrontend.yml.service.d/override.conf
+%attr(644, root, root) %{_unitdir}/podman-kube@-etc-fawkes\x2ddiscovery-discovery\x2dfrontend.yml.service.d/override.conf
 %attr(755, root, root) %{_sbindir}/fawkes-discovery-setup.sh
 
 %{imagedir}/%{image_frontend_tar}
