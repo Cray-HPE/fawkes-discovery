@@ -20,7 +20,7 @@ spec:
       restartPolicy: Always
       containers:
       - name: mongodb
-        image: docker.io/library/mongo
+        image: @@fawkes-discovery-db-image@@
         restartPolicy: Always
         volumeMounts:
         - mountPath: /data/configdb

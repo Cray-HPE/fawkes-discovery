@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: localhost/fawkes-discovery
+        image: @@fawkes-discovery-frontend-image@@
         hostname: frontend
         restartPolicy: Always
         env:

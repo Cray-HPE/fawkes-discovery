@@ -55,7 +55,7 @@ Requires:      podman-cni-config
 # This needs to match what is created for the image
 %define image_frontend artifactory.algol60.net/%{bucket}/%{name}:%{image_frontend_tag}
 %define image_frontend_tar %{name}-%{image_frontend_tag}.tar
-%define image_db_tag latest
+%define image_db_tag 7.0.2
 %define image_db docker.io/library/mongo:%{image_db_tag}
 %define image_db_tar %{name}-mongodb.tar
 
@@ -72,6 +72,8 @@ timeout 15m sh -c 'until skopeo inspect --creds=%(echo $ARTIFACTORY_USER:$ARTIFA
 %build
 skopeo copy --src-creds=%(echo $ARTIFACTORY_USER:$ARTIFACTORY_TOKEN) --additional-tag %{image_frontend} docker://%{image_frontend} docker-archive:%{image_frontend_tar}
 skopeo copy --additional-tag %{image_db} docker://%{image_db} docker-archive:%{image_db_tar}
+sed -e 's,@@fawkes-discovery-frontend-image@@,%{image_frontend}' -i deployments/discovery-frontend-template.yml
+sed -e 's,@@fawkes-discovery-db-image@@,%{image_db}' -i deployments/discovery-db-template.yml > deployments/discovery-db.yml
 
 %install
 install -D -m 0644 -t %{buildroot}%{_sysconfdir}/%{name} configs/%{name}.yml
