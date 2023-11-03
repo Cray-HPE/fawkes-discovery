@@ -123,4 +123,5 @@ fi
 %attr(755, root, root) %{_sbindir}/fawkes-discovery-setup.sh
 
 %{imagedir}/%{image_frontend_tar}
+%{imagedir}/%{image_db_tar}
 %changelog
