@@ -44,7 +44,7 @@ Requires:      podman-cni-config
 %define imagedir %{_sharedstatedir}/cray/container-images/%{name}
 
 %define current_branch %(echo ${GIT_BRANCH} | sed -e 's,/.*$,,')
-%define image_tag %(echo ${IMAGE_VERSION})
+%define image_frontend_tag %(echo ${IMAGE_VERSION})
 
 %if "%(echo ${IS_STABLE})" == "true"
 %define bucket fawkes-docker/stable
@@ -53,64 +53,76 @@ Requires:      podman-cni-config
 %endif
 
 # This needs to match what is created for the image
-%define image artifactory.algol60.net/%{bucket}/%{name}:%{image_tag}
-
-%define image_tar  %{name}-%{image_tag}.tar
+%define image_frontend artifactory.algol60.net/%{bucket}/%{name}:%{image_frontend_tag}
+%define image_frontend_tar %{name}-%{image_frontend_tag}.tar
+%define image_db_tag latest
+%define image_db docker.io/library/mongo:%{image_db_tag}
+%define image_db_tar %{name}-mongodb.tar
 
 %description
 An http endpoint for bare metal hardware data.
 
 %prep
 env
+
 %setup -q
-echo bucket: %{bucket} tag: %{image_tag} current_branch: %{current_branch}
-timeout 15m sh -c 'until skopeo inspect --creds=%(echo $ARTIFACTORY_USER:$ARTIFACTORY_TOKEN) docker://%{image}; do sleep 10; done'
+echo bucket: %{bucket} tag: %{image_frontend_tag} current_branch: %{current_branch}
+timeout 15m sh -c 'until skopeo inspect --creds=%(echo $ARTIFACTORY_USER:$ARTIFACTORY_TOKEN) docker://%{image_frontend}; do sleep 10; done'
 
 %build
-sed -e 's,@@%{name}-image@@,%{image},g' \
-    -e 's,@@%{name}-path@@,%{imagedir}/%{image_tar},g' \
-    -i init/%{name}-init.sh
-skopeo copy --src-creds=%(echo $ARTIFACTORY_USER:$ARTIFACTORY_TOKEN) docker://%{image} docker-archive:%{image_tar}
+skopeo copy --src-creds=%(echo $ARTIFACTORY_USER:$ARTIFACTORY_TOKEN) --additional-tag %{image_frontend} docker://%{image_frontend} docker-archive:%{image_frontend_tar}
+skopeo copy --additional-tag %{image_db} docker://%{image_db} docker-db-archive:%{image_db_tar}
 
 %install
-install -D -m 0644 -t %{buildroot}%{_unitdir} init/%{name}.service
-install -D -m 0755 -t %{buildroot}%{_sbindir} init/%{name}-init.sh
 install -D -m 0644 -t %{buildroot}%{_sysconfdir}/%{name} configs/%{name}.yml
-
-ln -s %{_sbindir}/service %{buildroot}%{_sbindir}/rc%{name}
-install -D -m 0644 -t %{buildroot}%{imagedir} %{image_tar}
+install -D -m 0644 -t %{buildroot}%{_sysconfdir}/%{name} deployments/discovery-db.yml
+install -D -m 0644 -t %{buildroot}%{_sysconfdir}/%{name} deployments/discovery-frontend-template.yml
+install -D -m 0644 -t %{buildroot}%{_unitdir}/podman-kube@-etc-fawkes\\x2ddiscovery-discovery\\x2dfrontend.yml.service.d pod-init/override.conf
+install -D -m 0755 -t %{buildroot}%{_sbindir} pod-init/fawkes-discovery-setup.sh
+install -D -m 0644 -t %{buildroot}%{imagedir} %{image_frontend_tar}
+install -D -m 0644 -t %{buildroot}%{imagedir} %{image_db_tar}
 
 %clean
-rm -f %{image_tar}
+rm -f %{image_frontend_tar}
+rm -f %{image_db_tar}
 
 # These macros will handle sysv initscripts migration transparently (as long as initscripts and systemd services have similar names)
 # These also tell systemd about changed unit files--that systemctl daemon-reload should be invoked
 %pre
-%service_add_pre %{name}.service
+%service_add_pre podman-kube@-etc-fawkes\\x2ddiscovery-discovery\\x2dmongo.yml.service
+%service_add_pre podman-kube@-etc-fawkes\\x2ddiscovery-discovery\\x2dfrontend.yml.service
 
 %post
-%service_add_post %{name}.service
+podman load -i %{imagedir}/%{image_db_tar}
+podman load -i %{imagedir}/%{image_frontend_tar}
+%service_add_post podman-kube@-etc-fawkes\\x2ddiscovery-discovery\\x2dmongo.yml.service
+%service_add_post podman-kube@-etc-fawkes\\x2ddiscovery-discovery\\x2dfrontend.yml.service
 
 %preun
-%service_del_preun %{name}.service
+%service_del_preun podman-kube@-etc-fawkes\\x2ddiscovery-discovery\\x2dfrontend.yml.service
+%service_del_preun podman-kube@-etc-fawkes\\x2ddiscovery-discovery\\x2dmongo.yml.service
 
 %postun
-%service_del_postun %{name}.service
+%service_del_postun podman-kube@-etc-fawkes\\x2ddiscovery-discovery\\x2dfrontend.yml.service
+%service_del_postun podman-kube@-etc-fawkes\\x2ddiscovery-discovery\\x2dmongo.yml.service
 # only on uninstalls stop and remove the container, for upgrades leave it alone.
 # https://docs.fedoraproject.org/en-US/packaging-guidelines/Scriptlets/#_syntax
 if [ $1 -eq 0 ] ; then
-    podman stop %{name}
-    podman rm %{name}
-    podman rmi %{image}
+    podman rmi %{image_frontend}
+    podman rmi %{image_db}
 fi
 
 %files
 %license LICENSE
 %doc README.adoc
 %defattr(-,root,root)
-%attr(755, root, root) %{_sbindir}/%{name}-init.sh
 %attr(644, root, root) %{_unitdir}/%{name}.service
 %attr(644, root, root) %{_sysconfdir}/%{name}/%{name}.yml
+%attr(644, root, root) %{_sysconfdir}/%{name}/discovery-db.yml
+%attr(644, root, root) %{_sysconfdir}/%{name}/discovery-frontend-template.yml
+%attr(644, root, root) %{_unitdir}/podman-kube@-etc-fawkes\\x2ddiscovery-discovery\\x2dfrontend.yml.service.d/override.conf
+%attr(755, root, root) %{_sbindir}/fawkes-discovery-setup.sh
+
 %{_sbindir}/rc%{name}
-%{imagedir}/%{image_tar}
+%{imagedir}/%{image_frontend_tar}
 %changelog

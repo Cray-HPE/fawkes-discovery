@@ -16,14 +16,18 @@ spec:
       labels:
         app: frontend
     spec:
-      hostname: frontend
-      restartPolicy: Always
       containers:
       - name: frontend
         image: localhost/fawkes-discovery
+        hostname: frontend
+        restartPolicy: Always
+        env:
+        - name: GIN_MODE
+          value: "release"
+
         ports:
-        - containerPort: 2020
-          hostPort: 2020
+        - containerPort:
+          hostPort:
         volumeMounts:
         - mountPath: /app/fawkes-discovery.yml
           name: fawkes-discovery-config

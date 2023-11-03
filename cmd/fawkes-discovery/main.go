@@ -56,7 +56,6 @@ func main() {
 		os.Exit(0)
 	}()
 
-	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
 	routes.Routes(router, bind, dbClient, database, collection)
 

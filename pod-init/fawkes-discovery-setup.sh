@@ -1,3 +1,5 @@
+#!/bin/bash
+#
 # MIT License
 #
 # (C) Copyright 2023 Hewlett Packard Enterprise Development LP
@@ -20,20 +22,18 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-ARG         GO_VERSION
-FROM        artifactory.algol60.net/csm-docker/stable/csm-docker-sle-go:${GO_VERSION} as builder
-ARG         NAME
-WORKDIR     /workspace
-COPY        . ./
+set -euo pipefail
 
-RUN         CGO_ENABLED=0 \
-            GOOS=linux \
-            GOARCH=amd64 \
-            GO111MODULE=on \
-            make ${NAME}
+# Update containerPort and hostPort in podman config.
+# input from values in: /etc/fawkes-discovery/fawkes-discovery.yml
+# output: /etc/fawkes-discovery/discovery-frontend.yml
+FAWKES_FRONTEND_CONFIG="/etc/fawkes-discovery/fawkes-discovery.yml"
+FAWKES_FRONTEND_PODMAN_TEMPLATE="/etc/fawkes-discovery/discovery-frontend-template.yml"
+FAWKES_FRONTEND_PODMAN_CONFIG="/etc/fawkes-discovery/discovery-frontend.yml"
 
-FROM        docker.io/library/ubuntu:latest
-WORKDIR     /app
-COPY        configs/fawkes-discovery.yml ./
-COPY        --from=builder /workspace/fawkes-discovery .
-ENTRYPOINT  ["/app/fawkes-discovery"]
+PORT=$(yq '.bind | sub("^:", "")' ${FAWKES_FRONTEND_CONFIG})
+PARENT_KEY=".spec.template.spec.containers[].ports[]"
+
+yq "${PARENT_KEY}.containerPort = ${PORT}, \
+    ${PARENT_KEY}.hostPort = ${PORT}" \
+    "${FAWKES_FRONTEND_PODMAN_TEMPLATE}" > "${FAWKES_FRONTEND_PODMAN_CONFIG}"
