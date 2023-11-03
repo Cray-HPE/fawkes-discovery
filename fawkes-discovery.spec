@@ -123,6 +123,5 @@ fi
 %attr(644, root, root) %{_unitdir}/podman-kube@-etc-fawkes\\x2ddiscovery-discovery\\x2dfrontend.yml.service.d/override.conf
 %attr(755, root, root) %{_sbindir}/fawkes-discovery-setup.sh
 
-%{_sbindir}/rc%{name}
 %{imagedir}/%{image_frontend_tar}
 %changelog
