@@ -57,7 +57,7 @@ Requires:      podman-cni-config
 %define image_frontend_tar %{name}-%{image_frontend_tag}.tar
 %define image_db_tag 7.0.2
 %define image_db docker.io/library/mongo:%{image_db_tag}
-%define image_db_tar %{name}-mongodb.tar
+%define image_db_tar %{name}-mongodb-%{image_db_tag}.tar
 
 %description
 An http endpoint for bare metal hardware data.
