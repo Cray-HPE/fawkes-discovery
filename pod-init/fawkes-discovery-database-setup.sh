@@ -24,16 +24,17 @@
 
 set -euo pipefail
 
-# Update containerPort and hostPort in podman config.
-# input from values in: /etc/fawkes-discovery/fawkes-discovery.yml
-# output: /etc/fawkes-discovery/discovery-frontend.yml
-FAWKES_FRONTEND_CONFIG="/etc/fawkes-discovery/fawkes-discovery.yml"
-FAWKES_FRONTEND_PODMAN_TEMPLATE="/etc/fawkes-discovery/discovery-frontend-template.yml"
-FAWKES_FRONTEND_PODMAN_CONFIG="/etc/fawkes-discovery/discovery-frontend.yml"
+MONGO_VERSION="@@mongo-version@@"
+DATABASE_IMAGE="docker.io/library/mongo:${MONGO_VERSION}"
+DATABASE_IMAGE_PATH="/var/lib/cray/container-images/fawkes-discovery/fawkes-discovery-mongodb-${MONGO_VERSION}.tar"
 
-PORT=$(yq '.bind | sub("^:", "")' ${FAWKES_FRONTEND_CONFIG})
-PARENT_KEY=".spec.template.spec.containers[].ports[]"
+# Load fawkes DATABASE image if it doesn't already exist
+if ! podman image inspect "$DATABASE_IMAGE" &>/dev/null; then
+    # load the image
+    podman load -i "$DATABASE_IMAGE_PATH" || exit
+    # get the tag
+    DATABASE_IMAGE_ID=$(podman images --noheading --format "{{.Id}}" --filter reference="mongo:${MONGO_VERSION}")
 
-yq "${PARENT_KEY}.containerPort = ${PORT}, \
-    ${PARENT_KEY}.hostPort = ${PORT}" \
-    "${FAWKES_FRONTEND_PODMAN_TEMPLATE}" > "${FAWKES_FRONTEND_PODMAN_CONFIG}"
+    # tag the image
+    podman tag "$DATABASE_IMAGE_ID" "$DATABASE_IMAGE"
+fi

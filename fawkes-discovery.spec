@@ -73,15 +73,18 @@ timeout 15m sh -c 'until skopeo inspect --creds=%(echo $ARTIFACTORY_USER:$ARTIFA
 skopeo copy --src-creds=%(echo $ARTIFACTORY_USER:$ARTIFACTORY_TOKEN) --additional-tag %{image_frontend} docker://%{image_frontend} docker-archive:%{image_frontend_tar}
 skopeo copy --additional-tag %{image_db} docker://%{image_db} docker-archive:%{image_db_tar}
 sed -e 's,@@fawkes-discovery-frontend-image@@,%{image_frontend},' -i deployments/discovery-frontend-template.yml
-sed -e 's,@@fawkes-discovery-db-image@@,%{image_db},' deployments/discovery-db-template.yml > deployments/discovery-db.yml
+sed -e 's,@@fawkes-discovery-db-image@@,%{image_db},' deployments/discovery-database-template.yml > deployments/discovery-database.yml
+sed -e 's,@@mongo-version@@,%{image_db_tag},' -i pod-init/fawkes-discovery-database-setup.sh
+sed -e 's,@@frontend-version@@,%{image_frontend_tag},' -i pod-init/fawkes-discovery-frontend-setup.sh
 
 %install
 install -D -m 0644 -t %{buildroot}%{_sysconfdir}/%{name} configs/%{name}.yml
-install -D -m 0644 -t %{buildroot}%{_sysconfdir}/%{name} deployments/discovery-db.yml
+install -D -m 0644 -t %{buildroot}%{_sysconfdir}/%{name} deployments/discovery-database.yml
 install -D -m 0644 -t %{buildroot}%{_sysconfdir}/%{name} deployments/discovery-frontend-template.yml
-install -D -m 0644 -t %{buildroot}%{_unitdir}/podman-kube@-etc-fawkes\\x2ddiscovery-discovery\\x2dfrontend.yml.service.d pod-init/frontend-override.conf
-install -D -m 0644 -t %{buildroot}%{_unitdir}/podman-kube@-etc-fawkes\\x2ddiscovery-discovery\\x2ddb.yml.service.d pod-init/database-override.conf
-install -D -m 0755 -t %{buildroot}%{_sbindir} pod-init/fawkes-discovery-setup.sh
+install -D -m 0644 -t %{buildroot}%{_unitdir} pod-init/fawkes-discovery-frontend.service
+install -D -m 0644 -t %{buildroot}%{_unitdir} pod-init/fawkes-discovery-database.service
+install -D -m 0755 -t %{buildroot}%{_sbindir} pod-init/fawkes-discovery-frontend-setup.sh
+install -D -m 0755 -t %{buildroot}%{_sbindir} pod-init/fawkes-discovery-database-setup.sh
 install -D -m 0644 -t %{buildroot}%{imagedir} %{image_frontend_tar}
 install -D -m 0644 -t %{buildroot}%{imagedir} %{image_db_tar}
 
@@ -92,22 +95,22 @@ rm -f %{image_db_tar}
 # These macros will handle sysv initscripts migration transparently (as long as initscripts and systemd services have similar names)
 # These also tell systemd about changed unit files--that systemctl daemon-reload should be invoked
 %pre
-%service_add_pre podman-kube@-etc-fawkes\\x2ddiscovery-discovery\\x2dmongo.yml.service
-%service_add_pre podman-kube@-etc-fawkes\\x2ddiscovery-discovery\\x2dfrontend.yml.service
+%service_add_pre fawkes-discovery-database.service
+%service_add_pre fawkes-discovery-frontend.service
 
 %post
 podman load -i %{imagedir}/%{image_db_tar}
 podman load -i %{imagedir}/%{image_frontend_tar}
-%service_add_post podman-kube@-etc-fawkes\\x2ddiscovery-discovery\\x2dmongo.yml.service
-%service_add_post podman-kube@-etc-fawkes\\x2ddiscovery-discovery\\x2dfrontend.yml.service
+%service_add_post fawkes-discovery-frontend.service
+%service_add_post fawkes-discovery-database.service
 
 %preun
-%service_del_preun podman-kube@-etc-fawkes\\x2ddiscovery-discovery\\x2dfrontend.yml.service
-%service_del_preun podman-kube@-etc-fawkes\\x2ddiscovery-discovery\\x2dmongo.yml.service
+%service_del_preun fawkes-discovery-frontend.service
+%service_del_preun fawkes-discovery-database.service
 
 %postun
-%service_del_postun podman-kube@-etc-fawkes\\x2ddiscovery-discovery\\x2dfrontend.yml.service
-%service_del_postun podman-kube@-etc-fawkes\\x2ddiscovery-discovery\\x2dmongo.yml.service
+%service_del_postun fawkes-discovery-frontend.service
+%service_del_postun fawkes-discovery-database.service
 # only on uninstalls stop and remove the container, for upgrades leave it alone.
 # https://docs.fedoraproject.org/en-US/packaging-guidelines/Scriptlets/#_syntax
 if [ $1 -eq 0 ] ; then
@@ -121,11 +124,12 @@ fi
 %defattr(-,root,root)
 %attr(644, root, root) %{_sysconfdir}/%{name}
 %attr(644, root, root) %{_sysconfdir}/%{name}/%{name}.yml
-%attr(644, root, root) %{_sysconfdir}/%{name}/discovery-db.yml
+%attr(644, root, root) %{_sysconfdir}/%{name}/discovery-database.yml
 %attr(644, root, root) %{_sysconfdir}/%{name}/discovery-frontend-template.yml
-%attr(644, root, root) %{_unitdir}/podman-kube@-etc-fawkes\x2ddiscovery-discovery\x2dfrontend.yml.service.d/frontend-override.conf
-%attr(644, root, root) %{_unitdir}/podman-kube@-etc-fawkes\x2ddiscovery-discovery\x2ddb.yml.service.d/database-override.conf
-%attr(755, root, root) %{_sbindir}/fawkes-discovery-setup.sh
+%attr(644, root, root) %{_unitdir}/fawkes-discovery-frontend.service
+%attr(644, root, root) %{_unitdir}/fawkes-discovery-database.service
+%attr(755, root, root) %{_sbindir}/fawkes-discovery-frontend-setup.sh
+%attr(755, root, root) %{_sbindir}/fawkes-discovery-database-setup.sh
 
 %{imagedir}/%{image_frontend_tar}
 %{imagedir}/%{image_db_tar}

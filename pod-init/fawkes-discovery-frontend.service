@@ -1,0 +1,19 @@
+[Unit]
+Description=Fawkes discovery frontend
+Requires=network-online.target fawkes-discovery-database.service
+After=network-online.target fawkes-discovery-database.service
+
+[Service]
+Restart=on-failure
+ExecStartPre=/usr/sbin/fawkes-discovery-frontend-setup.sh
+Environment=DEPLOYMENT=/etc/fawkes-discovery/discovery-frontend.yml
+ExecStart=/usr/bin/podman kube play ${DEPLOYMENT}
+ExecStop=/usr/bin/podman kube down ${DEPLOYMENT}
+# all remaining processes in the control group of this unit will be killed on unit stop
+# https://www.suse.com/support/kb/doc/?id=000020394
+KillMode=control-group
+Type=forking
+TimeoutStartSec=120
+
+[Install]
+WantedBy=multi-user.target
