@@ -124,7 +124,6 @@ fi
 %license LICENSE
 %doc README.adoc
 %defattr(-,root,root)
-%attr(644, root, root) %{_sysconfdir}/%{name}
 %attr(644, root, root) %{_sysconfdir}/%{name}/%{name}.yml
 %attr(644, root, root) %{_sysconfdir}/%{name}/discovery-database.yml
 %attr(644, root, root) %{_sysconfdir}/%{name}/discovery-frontend-template.yml
@@ -142,16 +141,16 @@ Summary: Collects and pushes hardware data for fawkes-discovery.
 
 %{?systemd_ordering}
 %pre -n fawkes-discovery-client
-service_add_pre fawkes-discovery-client.service
+%service_add_pre fawkes-discovery-client.service
 
 %post -n fawkes-discovery-client
-service_add_post fawkes-discovery-client.service
+%service_add_post fawkes-discovery-client.service
 
 %preun -n fawkes-discovery-client
-service_add_preun fawkes-discovery-client.service
+%service_add_preun fawkes-discovery-client.service
 
 %postun -n fawkes-discovery-client
-service_add_postun fawkes-discovery-client.service
+%service_add_postun fawkes-discovery-client.service
 
 %description -n fawkes-discovery-client
 Adds a systemd service for running fawkes-discovery-client
