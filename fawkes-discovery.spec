@@ -157,4 +157,4 @@ service_add_postun fawkes-discovery-client.service
 Adds a systemd service for running fawkes-discovery-client
 
 %files -n fawkes-discovery-client
-%{unitdir}/fawkes-discovery-client.service
+%{_unitdir}/fawkes-discovery-client.service
