@@ -79,18 +79,25 @@ func PostMachine(dbClient *mongo.Client, database string, collection string) gin
 	fn := func(c *gin.Context) {
 		body, _ := io.ReadAll(c.Request.Body)
 
-		collection := dbClient.Database(database).Collection(collection)
-
 		var bdoc map[string]interface{}
 		err := json.Unmarshal([]byte(body), &bdoc)
+
 		if err != nil {
+			c.JSON(400, gin.H{"message": err})
 			log.Println(err)
 		}
 
-		insertResult, err := collection.InsertOne(context.Background(), &bdoc)
-		log.Println(insertResult)
-		if err != nil {
-			log.Println(err)
+		filter := bson.D{{"_id", bdoc["_id"]}}
+		opts := options.FindOneAndReplace().SetUpsert(true)
+		collection := dbClient.Database(database).Collection(collection)
+		var previousDoc map[string]interface{}
+		dberr := collection.FindOneAndReplace(context.Background(), filter, bdoc, opts).Decode(&previousDoc)
+
+		if dberr != nil {
+			if dberr.Error() != "mongo: no documents in result" {
+				c.JSON(500, gin.H{"message": dberr})
+				log.Println(dberr)
+			}
 		}
 	}
 

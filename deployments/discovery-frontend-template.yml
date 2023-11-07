@@ -24,7 +24,6 @@ spec:
         env:
         - name: GIN_MODE
           value: "release"
-
         ports:
         - containerPort:
           hostPort:
