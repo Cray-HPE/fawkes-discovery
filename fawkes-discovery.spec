@@ -34,6 +34,7 @@ BuildRequires: skopeo
 BuildRequires: pkgconfig(systemd)
 Requires:      podman
 Requires:      podman-cni-config
+Requires:      lshw
 
 # helps when installing a program whose unit files makes use of a feature only available in a newer systemd version
 # If the program is installed on its own, it will have to make do with the available features
@@ -83,6 +84,7 @@ install -D -m 0644 -t %{buildroot}%{_sysconfdir}/%{name} deployments/discovery-d
 install -D -m 0644 -t %{buildroot}%{_sysconfdir}/%{name} deployments/discovery-frontend-template.yml
 install -D -m 0644 -t %{buildroot}%{_unitdir} pod-init/fawkes-discovery-frontend.service
 install -D -m 0644 -t %{buildroot}%{_unitdir} pod-init/fawkes-discovery-database.service
+install -D -m 0644 -t %{buildroot}%{_unitdir} client/fawkes-discovery-client.service
 install -D -m 0755 -t %{buildroot}%{_sbindir} pod-init/fawkes-discovery-frontend-setup.sh
 install -D -m 0755 -t %{buildroot}%{_sbindir} pod-init/fawkes-discovery-database-setup.sh
 install -D -m 0644 -t %{buildroot}%{imagedir} %{image_frontend_tar}
@@ -134,3 +136,25 @@ fi
 %{imagedir}/%{image_frontend_tar}
 %{imagedir}/%{image_db_tar}
 %changelog
+
+%package -n fawkes-discovery-client
+Summary: Collects and pushes hardware data for fawkes-discovery.
+
+%{?systemd_ordering}
+%pre -n fawkes-discovery-client
+service_add_pre fawkes-discovery-client.service
+
+%post -n fawkes-discovery-client
+service_add_post fawkes-discovery-client.service
+
+%preun -n fawkes-discovery-client
+service_add_preun fawkes-discovery-client.service
+
+%postun -n fawkes-discovery-client
+service_add_postun fawkes-discovery-client.service
+
+%description -n fawkes-discovery-client
+Adds a systemd service for running fawkes-discovery-client
+
+%files -n fawkes-discovery-client
+%{unitdir}/fawkes-discovery-client.service

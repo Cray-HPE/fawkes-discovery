@@ -1,0 +1,21 @@
+[Unit]
+Description=Fawkes hardware discovery
+StartLimitIntervalSec=600s
+StartLimitBurst=10
+After=network.target
+
+[Service]
+Type=oneshot
+Restart=on-failure
+RestartSec=20s
+Environment=SERVER=http://bootserver
+ExecStart=/bin/sh -c "lshw -json | \
+                      jq '._id=.serial' | \
+                      curl -s \
+                        -X POST \
+                        -H 'Content-Type: application/json' \
+                        --data-binary @- \
+                        $SERVER"
+
+[Install]
+WantedBy=multi-user.target
