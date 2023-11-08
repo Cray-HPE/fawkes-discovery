@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
@@ -78,25 +79,42 @@ func GetMachineByID(dbClient *mongo.Client, database string, collection string) 
 func PostMachine(dbClient *mongo.Client, database string, collection string) gin.HandlerFunc {
 	fn := func(c *gin.Context) {
 		body, _ := io.ReadAll(c.Request.Body)
+		collection := dbClient.Database(database).Collection(collection)
+		currentTime := time.Now().Unix()
 
-		var bdoc map[string]interface{}
-		err := json.Unmarshal([]byte(body), &bdoc)
+		var newDoc map[string]interface{}
+		_ = json.Unmarshal([]byte(body), &newDoc)
 
-		if err != nil {
-			c.JSON(400, gin.H{"message": err})
-			log.Println(err)
+		newDoc["_id"] = newDoc["serial"]
+		filter := bson.D{{"_id", newDoc["_id"]}}
+
+		var previousDoc map[string]interface{}
+		finddberr := collection.FindOne(context.Background(), filter).Decode(&previousDoc)
+
+		if finddberr != nil {
+			if finddberr.Error() != "mongo: no documents in result" {
+				c.JSON(400, gin.H{"message": finddberr})
+				log.Println(finddberr)
+			}
 		}
 
-		filter := bson.D{{"_id", bdoc["_id"]}}
-		opts := options.FindOneAndReplace().SetUpsert(true)
-		collection := dbClient.Database(database).Collection(collection)
-		var previousDoc map[string]interface{}
-		dberr := collection.FindOneAndReplace(context.Background(), filter, bdoc, opts).Decode(&previousDoc)
+		if previousDoc["creationDate"] != nil {
+			newDoc["creationDate"] = previousDoc["creationDate"]
+		} else {
+			newDoc["creationDate"] = currentTime
+		}
+		newDoc["modifiedDate"] = currentTime
 
-		if dberr != nil {
-			if dberr.Error() != "mongo: no documents in result" {
-				c.JSON(500, gin.H{"message": dberr})
-				log.Println(dberr)
+		upsert := true
+		before := options.Before
+		opts := options.FindOneAndReplaceOptions{Upsert: &upsert, ReturnDocument: &before}
+
+		replacedberr := collection.FindOneAndReplace(context.Background(), filter, newDoc, &opts).Decode(&previousDoc)
+
+		if replacedberr != nil {
+			if replacedberr.Error() != "mongo: no documents in result" {
+				c.JSON(500, gin.H{"message": replacedberr})
+				log.Println(replacedberr)
 			}
 		}
 	}
