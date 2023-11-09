@@ -79,7 +79,8 @@ sed -e 's,@@mongo-version@@,%{image_db_tag},' -i pod-init/fawkes-discovery-datab
 sed -e 's,@@frontend-version@@,%{image_frontend_tag},' -i pod-init/fawkes-discovery-frontend-setup.sh
 
 %install
-install -D -m 0644 -t %{buildroot}%{_sysconfdir}/%{name} configs/%{name}.yml
+install -D -m 0644 -t %{buildroot}%{_sysconfdir}/%{name} configs/frontend/%{name}.yml
+install -D -m 0644 -t %{buildroot}%{_sysconfdir}/%{name} configs/mongo/mongo-init.js
 install -D -m 0644 -t %{buildroot}%{_sysconfdir}/%{name} deployments/discovery-database.yml
 install -D -m 0644 -t %{buildroot}%{_sysconfdir}/%{name} deployments/discovery-frontend-template.yml
 install -D -m 0644 -t %{buildroot}%{_unitdir} pod-init/fawkes-discovery-frontend.service
@@ -125,6 +126,7 @@ fi
 %doc README.adoc
 %defattr(-,root,root)
 %attr(644, root, root) %{_sysconfdir}/%{name}/%{name}.yml
+%attr(644, root, root) %{_sysconfdir}/%{name}/mongo-init.js
 %attr(644, root, root) %{_sysconfdir}/%{name}/discovery-database.yml
 %attr(644, root, root) %{_sysconfdir}/%{name}/discovery-frontend-template.yml
 %attr(644, root, root) %{_unitdir}/fawkes-discovery-frontend.service

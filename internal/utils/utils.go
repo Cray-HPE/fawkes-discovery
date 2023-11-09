@@ -79,17 +79,18 @@ func GetMachineByID(dbClient *mongo.Client, database string, collection string) 
 func PostMachine(dbClient *mongo.Client, database string, collection string) gin.HandlerFunc {
 	fn := func(c *gin.Context) {
 		body, _ := io.ReadAll(c.Request.Body)
+
 		collection := dbClient.Database(database).Collection(collection)
 		currentTime := time.Now().Unix()
 
-		var newDoc map[string]interface{}
-		_ = json.Unmarshal([]byte(body), &newDoc)
+		var newdoc map[string]interface{}
+		_ = json.Unmarshal([]byte(body), &newdoc)
 
-		newDoc["_id"] = newDoc["serial"]
-		filter := bson.D{{"_id", newDoc["_id"]}}
+		newdoc["_id"] = newdoc["serial"]
+		filter := bson.D{{"_id", newdoc["_id"]}}
 
-		var previousDoc map[string]interface{}
-		finddberr := collection.FindOne(context.Background(), filter).Decode(&previousDoc)
+		var previousdoc map[string]interface{}
+		finddberr := collection.FindOne(context.Background(), filter).Decode(&previousdoc)
 
 		if finddberr != nil {
 			if finddberr.Error() != "mongo: no documents in result" {
@@ -98,14 +99,17 @@ func PostMachine(dbClient *mongo.Client, database string, collection string) gin
 			}
 		}
 
-		if previousDoc["creationDate"] != nil {
-			newDoc["creationDate"] = previousDoc["creationDate"]
+		if previousdoc["_birth"] != nil {
+			newdoc["_birth"] = previousdoc["_birth"]
 		} else {
-			newDoc["creationDate"] = currentTime
+			newdoc["_birth"] = currentTime
 		}
-		newDoc["modifiedDate"] = currentTime
+		newdoc["_modify"] = currentTime
 
-		replacedberr := collection.FindOneAndReplace(context.Background(), filter, newDoc).Decode(&previousDoc)
+		upsert := true
+		opts := options.FindOneAndReplaceOptions{Upsert: &upsert}
+		replacedberr := collection.FindOneAndReplace(context.Background(), filter, newdoc, &opts).Decode(&previousdoc)
+		ClassifyMachine(&newdoc)
 
 		if replacedberr != nil {
 			if replacedberr.Error() != "mongo: no documents in result" {
@@ -114,6 +118,10 @@ func PostMachine(dbClient *mongo.Client, database string, collection string) gin
 			}
 		}
 	}
-
 	return gin.HandlerFunc(fn)
+}
+
+func ClassifyMachine(newdoc *map[string]interface{}) string {
+	log.Println(*newdoc)
+	return "string"
 }

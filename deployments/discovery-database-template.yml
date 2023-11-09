@@ -27,6 +27,8 @@ spec:
           name: mongo-configdb
         - mountPath: /data/db
           name: mongo-datadb
+        - mountPath: /docker-entrypoint-initdb.d/mongo-init.js:ro
+          name: mongo-init
       volumes:
       - name: mongo-configdb
         persistentVolumeClaim:
@@ -34,3 +36,7 @@ spec:
       - name: mongo-datadb
         persistentVolumeClaim:
           claimName: mongo-datadb
+      - hostPath:
+          path: /etc/fawkes-discovery/mongo-init.js
+          type: File
+        name: mongo-init
