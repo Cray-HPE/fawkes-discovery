@@ -149,10 +149,10 @@ Summary: Collects and pushes hardware data for fawkes-discovery.
 %service_add_post fawkes-discovery-client.service
 
 %preun -n fawkes-discovery-client
-%service_add_preun fawkes-discovery-client.service
+%service_del_preun fawkes-discovery-client.service
 
 %postun -n fawkes-discovery-client
-%service_add_postun fawkes-discovery-client.service
+%service_del_postun fawkes-discovery-client.service
 
 %description -n fawkes-discovery-client
 Adds a systemd service for running fawkes-discovery-client
