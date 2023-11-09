@@ -105,11 +105,7 @@ func PostMachine(dbClient *mongo.Client, database string, collection string) gin
 		}
 		newDoc["modifiedDate"] = currentTime
 
-		upsert := true
-		before := options.Before
-		opts := options.FindOneAndReplaceOptions{Upsert: &upsert, ReturnDocument: &before}
-
-		replacedberr := collection.FindOneAndReplace(context.Background(), filter, newDoc, &opts).Decode(&previousDoc)
+		replacedberr := collection.FindOneAndReplace(context.Background(), filter, newDoc).Decode(&previousDoc)
 
 		if replacedberr != nil {
 			if replacedberr.Error() != "mongo: no documents in result" {
