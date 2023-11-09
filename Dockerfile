@@ -34,6 +34,6 @@ RUN         CGO_ENABLED=0 \
 
 FROM        docker.io/library/ubuntu:latest
 WORKDIR     /app
-COPY        configs/fawkes-discovery.yml ./
+COPY        configs/frontend/fawkes-discovery.yml ./
 COPY        --from=builder /workspace/fawkes-discovery .
 ENTRYPOINT  ["/app/fawkes-discovery"]
