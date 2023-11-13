@@ -33,9 +33,7 @@ if (env.BRANCH_NAME ==~ ~"^PR-\\d+") {
     echo "Dependabot GitHub action builds are skipped."
     return
 }
-// Only main or maint/* branches are stable.
-def promotionToken = ~"(main|release\\/.*)"
-def isStable = env.BRANCH_NAME ==~ promotionToken ? true : false
+def isStable = env.TAG_NAME != null ? true : false
 def goImage = 'artifactory.algol60.net/csm-docker/stable/csm-docker-sle-go'
 
 pipeline {
