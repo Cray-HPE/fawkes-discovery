@@ -10,6 +10,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -57,13 +58,11 @@ func GetMachines(dbClient *mongo.Client, database string, collection string) gin
 
 func GetMachineByID(dbClient *mongo.Client, database string, collection string) gin.HandlerFunc {
 	fn := func(c *gin.Context) {
-		// Ex. curl -s http://localhost:8080/MXL12353X4
-		// id = MXL12353X4
-		id := c.Param("id")
+		query := c.Request.URL.Query()
 
 		collection := dbClient.Database(database).Collection(collection)
 
-		filter := bson.D{{Key: "_id", Value: id}}
+		filter := bson.D{{Key: "_id", Value: query["serial"][0]}}
 
 		var result bson.M
 		err := collection.FindOne(context.Background(), filter).Decode(&result)
@@ -86,7 +85,6 @@ func PostMachine(dbClient *mongo.Client, database string, collection string) gin
 		var newdoc map[string]interface{}
 		_ = json.Unmarshal([]byte(body), &newdoc)
 
-		newdoc["_id"] = newdoc["serial"]
 		filter := bson.D{{"_id", newdoc["_id"]}}
 
 		var previousdoc map[string]interface{}
@@ -109,7 +107,6 @@ func PostMachine(dbClient *mongo.Client, database string, collection string) gin
 		upsert := true
 		opts := options.FindOneAndReplaceOptions{Upsert: &upsert}
 		replacedberr := collection.FindOneAndReplace(context.Background(), filter, newdoc, &opts).Decode(&previousdoc)
-		ClassifyMachine(&newdoc)
 
 		if replacedberr != nil {
 			if replacedberr.Error() != "mongo: no documents in result" {
@@ -117,11 +114,97 @@ func PostMachine(dbClient *mongo.Client, database string, collection string) gin
 				log.Println(replacedberr)
 			}
 		}
+
+		ClassifyMachine(collection, &newdoc)
+
 	}
 	return gin.HandlerFunc(fn)
 }
 
-func ClassifyMachine(newdoc *map[string]interface{}) string {
-	log.Println(*newdoc)
+func ClassifyMachine(collection *mongo.Collection, newdoc *map[string]interface{}) string {
+	pipeline := mongo.Pipeline{
+		{
+			{
+				Key:   "$unwind",
+				Value: "$storage",
+			},
+		},
+		{
+			{
+				Key: "$match", Value: bson.D{
+					{
+						Key: "$or",
+						Value: bson.A{
+							bson.D{
+								{
+									Key:   "storage.id",
+									Value: "nvme",
+								},
+								{
+									Key:   "storage.class",
+									Value: "storage",
+								},
+							},
+							bson.D{
+								{
+									Key:   "storage.id",
+									Value: primitive.Regex{Pattern: "^sata.*"},
+								},
+								{
+									Key:   "storage.class",
+									Value: "storage",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			{
+				Key: "$group",
+				Value: bson.D{
+					{
+						Key:   "_id",
+						Value: "$_id",
+					},
+					{
+						Key: "storage",
+						Value: bson.D{
+							{
+								Key:   "$addToSet",
+								Value: "$storage",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			{
+				Key: "$project",
+				Value: bson.D{
+					{
+						Key: "storagecount",
+						Value: bson.D{
+							{
+								Key:   "$size",
+								Value: "$storage",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	cursor, err := collection.Aggregate(context.Background(), pipeline)
+
+	if err != nil {
+		panic(err)
+	}
+	var results []bson.M
+	cursor.All(context.TODO(), &results)
+	log.Println(len(results))
 	return "string"
 }
