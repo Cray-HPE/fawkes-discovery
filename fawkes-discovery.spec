@@ -86,6 +86,7 @@ install -D -m 0644 -t %{buildroot}%{_sysconfdir}/%{name} deployments/discovery-f
 install -D -m 0644 -t %{buildroot}%{_unitdir} pod-init/fawkes-discovery-frontend.service
 install -D -m 0644 -t %{buildroot}%{_unitdir} pod-init/fawkes-discovery-database.service
 install -D -m 0644 -t %{buildroot}%{_unitdir} client/fawkes-discovery-client.service
+install -D -m 0755 -t %{buildroot}%{_sbindir} client/fawkes-lshw.sh
 install -D -m 0755 -t %{buildroot}%{_sbindir} pod-init/fawkes-discovery-frontend-setup.sh
 install -D -m 0755 -t %{buildroot}%{_sbindir} pod-init/fawkes-discovery-database-setup.sh
 install -D -m 0644 -t %{buildroot}%{imagedir} %{image_frontend_tar}
@@ -158,4 +159,7 @@ Summary: Collects and pushes hardware data for fawkes-discovery.
 Adds a systemd service for running fawkes-discovery-client
 
 %files -n fawkes-discovery-client
+%license LICENSE
+%doc README.adoc
+%attr(755, root, root) %{_sbindir}/fawkes-lshw.sh
 %{_unitdir}/fawkes-discovery-client.service

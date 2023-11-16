@@ -5,33 +5,171 @@ db.createCollection("lshw", {
       $jsonSchema: {
          bsonType: "object",
          title: "Discovery Hardware Data",
-         required: [ "id", "class", "description", "product", "vendor", "serial" ],
+         required: [ "bridge",
+                     "bus",
+                     "communication",
+                     "disk",
+                     "display",
+                     "generic",
+                     "input",
+                     "memory",
+                     "multimedia",
+                     "network",
+                     "power",
+                     "processor",
+                     "storage",
+                     "system",
+                     "volume" 
+                  ],
          properties: {
-            id: {
-               bsonType: "string",
-               description: "system name (hostname)"
+            bridge: {
+               bsonType: "array",
+               description: "bridge"
             },
-            class: {
-               bsonType: "string",
+            bus: {
+               bsonType: "array",
+               description: "bus"
+            },
+            communication: {
+               bsonType: "array",
+               description: "communication"
+            },
+            disk: {
+               bsonType: "array",
+               description: "disk"
+            },
+            display: {
+               bsonType: "array",
+               description: "display"
+            },
+            generic: {
+               bsonType: "array",
+               description: "generic"
+            },
+            input: {
+               bsonType: "array",
+               description: "input"
+            },
+            memory: {
+               bsonType: "array",
+               description: "memory"
+            },
+            multimedia: {
+               bsonType: "array",
+               description: "multimedia"
+            },
+            network: {
+               bsonType: "array",
+               description: "network"
+            },
+            power: {
+               bsonType: "array",
+               description: "power"
+            },
+            processor: {
+               bsonType: "array",
+               description: "processor"
+            },
+            storage: {
+               bsonType: "array",
+               description: "storage"
+            },
+            system: {
+               bsonType: "array",
                description: "system"
             },
-            description: {
-               bsonType: "string",
-               description: "type of server"
+            volume: {
+               bsonType: "array",
+               description: "volume"
             },
-            product: {
-               bsonType: "string",
-               description: "manufacturer, model, name"
-            },
-            vendor: {
-               bsonType: "string",
-               description: "manufacturer"
-            },
-            serial: {
-               bsonType: "string",
-               description: "system serial number"
-            }
          }
       }
    }
 } );
+
+db.createCollection( { collmod: "lshw",
+   validator: {
+      $jsonSchema: {
+         bsonType: "object",
+         title: "Discovery Hardware Data",
+         required: [ "bridge",
+                     "bus",
+                     "communication",
+                     "disk",
+                     "display",
+                     "generic",
+                     "input",
+                     "memory",
+                     "multimedia",
+                     "network",
+                     "power",
+                     "processor",
+                     "storage",
+                     "system",
+                     "volume" 
+                  ],
+         properties: {
+            bridge: {
+               bsonType: "array",
+               description: "bridge"
+            },
+            bus: {
+               bsonType: "array",
+               description: "bus"
+            },
+            communication: {
+               bsonType: "array",
+               description: "communication"
+            },
+            disk: {
+               bsonType: "array",
+               description: "disk"
+            },
+            display: {
+               bsonType: "array",
+               description: "display"
+            },
+            generic: {
+               bsonType: "array",
+               description: "generic"
+            },
+            input: {
+               bsonType: "array",
+               description: "input"
+            },
+            memory: {
+               bsonType: "array",
+               description: "memory"
+            },
+            multimedia: {
+               bsonType: "array",
+               description: "multimedia"
+            },
+            network: {
+               bsonType: "array",
+               description: "network"
+            },
+            power: {
+               bsonType: "array",
+               description: "power"
+            },
+            processor: {
+               bsonType: "array",
+               description: "processor"
+            },
+            storage: {
+               bsonType: "array",
+               description: "storage"
+            },
+            system: {
+               bsonType: "array",
+               description: "system"
+            },
+            volume: {
+               bsonType: "array",
+               description: "volume"
+            },
+         }
+      }
+   }
+} )
