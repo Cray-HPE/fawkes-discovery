@@ -122,6 +122,9 @@ func PostMachine(dbClient *mongo.Client, database string, collection string) gin
 }
 
 func ClassifyMachine(collection *mongo.Collection) string {
+	//hypervisor_disks := 2
+	storage_disks := 6
+
 	pipeline := mongo.Pipeline{
 		{
 			{
@@ -145,10 +148,6 @@ func ClassifyMachine(collection *mongo.Collection) string {
 									Key:   "storage.class",
 									Value: "storage",
 								},
-								{
-									Key:   "_id",
-									Value: "BQWF1883",
-								},
 							},
 							bson.D{
 								{
@@ -158,10 +157,6 @@ func ClassifyMachine(collection *mongo.Collection) string {
 								{
 									Key:   "storage.class",
 									Value: "storage",
-								},
-								{
-									Key:   "_id",
-									Value: "BQWF1883",
 								},
 							},
 						},
@@ -213,10 +208,28 @@ func ClassifyMachine(collection *mongo.Collection) string {
 						Key: "node_class",
 						Value: bson.D{
 							{
-								Key: "$gte",
-								Value: bson.A{
-									"$diskcount",
-									2,
+								Key: "$cond",
+								Value: bson.D{
+									{
+										Key: "if",
+										Value: bson.D{
+											{
+												Key: "$gte",
+												Value: bson.A{
+													"$diskcount",
+													storage_disks,
+												},
+											},
+										},
+									},
+									{
+										Key:   "then",
+										Value: "storage",
+									},
+									{
+										Key:   "else",
+										Value: "hypervisor",
+									},
 								},
 							},
 						},
