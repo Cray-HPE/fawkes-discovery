@@ -115,13 +115,13 @@ func PostMachine(dbClient *mongo.Client, database string, collection string) gin
 			}
 		}
 
-		ClassifyMachine(collection, &newdoc)
+		ClassifyMachine(collection)
 
 	}
 	return gin.HandlerFunc(fn)
 }
 
-func ClassifyMachine(collection *mongo.Collection, newdoc *map[string]interface{}) string {
+func ClassifyMachine(collection *mongo.Collection) string {
 	pipeline := mongo.Pipeline{
 		{
 			{
@@ -131,7 +131,8 @@ func ClassifyMachine(collection *mongo.Collection, newdoc *map[string]interface{
 		},
 		{
 			{
-				Key: "$match", Value: bson.D{
+				Key: "$match",
+				Value: bson.D{
 					{
 						Key: "$or",
 						Value: bson.A{
@@ -144,6 +145,10 @@ func ClassifyMachine(collection *mongo.Collection, newdoc *map[string]interface{
 									Key:   "storage.class",
 									Value: "storage",
 								},
+								{
+									Key:   "_id",
+									Value: "BQWF1883",
+								},
 							},
 							bson.D{
 								{
@@ -153,6 +158,10 @@ func ClassifyMachine(collection *mongo.Collection, newdoc *map[string]interface{
 								{
 									Key:   "storage.class",
 									Value: "storage",
+								},
+								{
+									Key:   "_id",
+									Value: "BQWF1883",
 								},
 							},
 						},
@@ -185,13 +194,51 @@ func ClassifyMachine(collection *mongo.Collection, newdoc *map[string]interface{
 				Key: "$project",
 				Value: bson.D{
 					{
-						Key: "storagecount",
+						Key: "diskcount",
 						Value: bson.D{
 							{
 								Key:   "$size",
 								Value: "$storage",
 							},
 						},
+					},
+				},
+			},
+		},
+		{
+			{
+				Key: "$project",
+				Value: bson.D{
+					{
+						Key: "node_class",
+						Value: bson.D{
+							{
+								Key: "$gte",
+								Value: bson.A{
+									"$diskcount",
+									2,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			{
+				Key: "$merge",
+				Value: bson.D{
+					{
+						Key:   "into",
+						Value: "lshw",
+					},
+					{
+						Key:   "on",
+						Value: "_id",
+					},
+					{
+						Key:   "whenMatched",
+						Value: "merge",
 					},
 				},
 			},
@@ -203,8 +250,18 @@ func ClassifyMachine(collection *mongo.Collection, newdoc *map[string]interface{
 	if err != nil {
 		panic(err)
 	}
+
 	var results []bson.M
 	cursor.All(context.TODO(), &results)
-	log.Println(len(results))
+
+	for _, n := range results {
+		log.Println(n)
+		// 	count := n["diskcount"].(int32)
+
+		// 	if count >= 6 {
+		// 		log.Println(n["_id"], n["diskcount"])
+		// 	}
+	}
+
 	return "string"
 }
