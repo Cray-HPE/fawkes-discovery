@@ -121,7 +121,7 @@ func PostMachine(dbClient *mongo.Client, database string, collection string) gin
 	return gin.HandlerFunc(fn)
 }
 
-func ClassifyMachine(collection *mongo.Collection) string {
+func ClassifyMachine(collection *mongo.Collection) []bson.M {
 	hypervisor_disks := 2
 	storage_disks := 6
 
@@ -292,14 +292,5 @@ func ClassifyMachine(collection *mongo.Collection) string {
 	var results []bson.M
 	cursor.All(context.TODO(), &results)
 
-	for _, n := range results {
-		log.Println(n)
-		// 	count := n["diskcount"].(int32)
-
-		// 	if count >= 6 {
-		// 		log.Println(n["_id"], n["diskcount"])
-		// 	}
-	}
-
-	return "string"
+	return results
 }
