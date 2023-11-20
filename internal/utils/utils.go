@@ -44,6 +44,10 @@ func GetMachines(dbClient *mongo.Client, database string, collection string) gin
 		collection := dbClient.Database(database).Collection(collection)
 		cursor, err := collection.Find(context.Background(), bson.M{})
 
+		if err != nil {
+			log.Println(err)
+		}
+
 		var records []bson.M
 		if err = cursor.All(context.Background(), &records); err != nil {
 			c.JSON(404, gin.H{"message": "No records found."})

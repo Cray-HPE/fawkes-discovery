@@ -13,7 +13,8 @@ func Routes(router *gin.Engine, bind string, dbClient *mongo.Client, database st
 	})
 
 	router.GET("/", utils.GetMachines(dbClient, database, collection))
-	router.GET("/:id", utils.GetMachineByID(dbClient, database, collection))
+	//router.GET("/:id", utils.GetMachineByID(dbClient, database, collection))
+	router.GET("/class", utils.GetMachineByID(dbClient, database, collection))
 	router.POST("/", utils.PostMachine(dbClient, database, collection))
 	router.Run(bind)
 }
