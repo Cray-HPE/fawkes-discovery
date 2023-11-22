@@ -1,0 +1,22 @@
+{
+    "disks": [
+      { "$unwind": "$storage" },
+      { "$match": { "$or": [ { "storage.id": "^nvme", "storage.class": "storage" }, { "storage.id": { "$regex": "^sata.*" }, "storage.class": "storage" }, { "storage.id": { "$regex": "^sas" }, "storage.class": "storage" } ] } },
+      { "$group": { "_id": "$_id", "storage": { "$addToSet": "$storage" } } },
+      { "$project": { "diskcount": { "$size": "$storage" } } },
+      { "$project": { "nodeClass": { "$switch": { "branches": [ { "case": { "$lte": [ "$diskcount", "2" ] }, "then": "hypervisor" }, { "case": { "$gte": [ "$diskcount", "6" ] }, "then": "storage" } ], "default": "" } } } },
+      { "$merge": { "into": "lshw", "on": "_id", "whenMatched": "merge" } }
+    ],
+    "memory": [
+      { "$unwind": "$memory" },
+      { "$match": { "$and": [ { "memory.id": "memory" }, { "memory.class": "memory" }, { "memory.size": { "$exists": true } } ] } },
+      { "$group": { "_id": "$_id", "totalRamGB": { "$first": { "$divide": [ "$memory.size", 1073741824 ] } } } },
+      { "$merge": { "into": "lshw", "on": "_id", "whenMatched": "merge" } }
+    ],
+    "processors": [
+      { "$match": { "$and": [ { "processor.configuration.cores": { "$exists": true } }, { "processor.id": { "$regex": "^cpu.*" } } ] } },
+      { "$set": { "cpuCoreCount": { "$map": { "input": "$processor.configuration.cores", "in": { "$toInt": "$$this" } } } } },
+      { "$set": { "cpuCoreCount": { "$sum": "$cpuCoreCount" } } },
+      { "$merge": { "into": "lshw", "on": "_id", "whenMatched": "merge" } }
+    ]
+  }

@@ -6,16 +6,25 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 func OpenDBconn(mongoserver string) *mongo.Client {
+	// monitor := &event.CommandMonitor{
+	// 	Started: func(_ context.Context, e *event.CommandStartedEvent) {
+	// 		fmt.Println(e.Command)
+	// 	},
+	// 	Succeeded: func(_ context.Context, e *event.CommandSucceededEvent) {
+	// 		fmt.Println(e.Reply)
+	// 	},
+	// }
+
 	clientOptions := options.Client().ApplyURI("mongodb://" + mongoserver)
 	client, err := mongo.Connect(context.Background(), clientOptions)
 	if err != nil {
@@ -55,6 +64,7 @@ func GetMachines(dbClient *mongo.Client, database string, collection string) gin
 		}
 
 		c.IndentedJSON(http.StatusOK, records)
+		//ClassifyMachine(collection)
 	}
 
 	return gin.HandlerFunc(fn)
@@ -74,8 +84,9 @@ func GetMachineByID(dbClient *mongo.Client, database string, collection string) 
 			c.JSON(404, gin.H{"message": "Machine not found."})
 		}
 		c.IndentedJSON(http.StatusOK, result)
-	}
 
+		ClassifyMachine(collection)
+	}
 	return gin.HandlerFunc(fn)
 }
 
@@ -125,176 +136,33 @@ func PostMachine(dbClient *mongo.Client, database string, collection string) gin
 	return gin.HandlerFunc(fn)
 }
 
-func ClassifyMachine(collection *mongo.Collection) []bson.M {
-	hypervisor_disks := 2
-	storage_disks := 6
-
-	pipeline := mongo.Pipeline{
-		{
-			{
-				Key:   "$unwind",
-				Value: "$storage",
-			},
-		},
-		{
-			{
-				Key: "$match",
-				Value: bson.D{
-					{
-						Key: "$or",
-						Value: bson.A{
-							bson.D{
-								{
-									Key:   "storage.id",
-									Value: "nvme",
-								},
-								{
-									Key:   "storage.class",
-									Value: "storage",
-								},
-							},
-							bson.D{
-								{
-									Key:   "storage.id",
-									Value: primitive.Regex{Pattern: "^sata.*"},
-								},
-								{
-									Key:   "storage.class",
-									Value: "storage",
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			{
-				Key: "$group",
-				Value: bson.D{
-					{
-						Key:   "_id",
-						Value: "$_id",
-					},
-					{
-						Key: "storage",
-						Value: bson.D{
-							{
-								Key:   "$addToSet",
-								Value: "$storage",
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			{
-				Key: "$project",
-				Value: bson.D{
-					{
-						Key: "diskcount",
-						Value: bson.D{
-							{
-								Key:   "$size",
-								Value: "$storage",
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			{
-				Key: "$project",
-				Value: bson.D{
-					{
-						Key: "node_class",
-						Value: bson.D{
-							{
-								Key: "$switch",
-								Value: bson.D{
-									{
-										Key: "branches",
-										Value: bson.A{
-											bson.D{
-												{
-													Key: "case",
-													Value: bson.D{
-														{
-															Key: "$lte",
-															Value: bson.A{
-																"$diskcount",
-																hypervisor_disks,
-															},
-														},
-													},
-												},
-												{
-													Key:   "then",
-													Value: "hypervisor",
-												},
-											},
-											bson.D{
-												{
-													Key: "case",
-													Value: bson.D{
-														{
-															Key: "$gte",
-															Value: bson.A{
-																"$diskcount",
-																storage_disks,
-															},
-														},
-													},
-												},
-												{
-													Key:   "then",
-													Value: "storage",
-												},
-											},
-										},
-									},
-									{
-										Key:   "default",
-										Value: "",
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			{
-				Key: "$merge",
-				Value: bson.D{
-					{
-						Key:   "into",
-						Value: "lshw",
-					},
-					{
-						Key:   "on",
-						Value: "_id",
-					},
-					{
-						Key:   "whenMatched",
-						Value: "merge",
-					},
-				},
-			},
-		},
-	}
-
-	cursor, err := collection.Aggregate(context.Background(), pipeline)
-
-	if err != nil {
-		panic(err)
-	}
-
+func ClassifyMachine(collection *mongo.Collection) {
+	// Parse mongo queries file
+	querymap := LoadNodeClasses()
 	var results []bson.M
-	cursor.All(context.TODO(), &results)
 
-	return results
+	for class := range querymap {
+		cursor, err := collection.Aggregate(context.Background(), querymap[class])
+
+		if err != nil {
+			panic(err)
+		}
+		cursor.All(context.TODO(), &results)
+	}
+}
+
+func LoadNodeClasses() map[string]interface{} {
+	jsonQueriesFile, queryerr := os.Open("/etc/fawkes-discovery/fawkes-discovery-queries.json")
+	if queryerr != nil {
+		log.Println(queryerr)
+	}
+	jsonQueries, _ := io.ReadAll(jsonQueriesFile)
+
+	var querymap map[string]interface{}
+	err := json.Unmarshal([]byte(jsonQueries), &querymap)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return querymap
 }

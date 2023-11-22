@@ -19,7 +19,8 @@ func main() {
 	flag.StringP("mongoserver", "s", "", "Mongo ip:port")
 	flag.StringP("database", "d", "", "Mongo database to use")
 	flag.StringP("collection", "c", "", "Mongo collection to use")
-	flag.StringP("config", "f", "", "Path to configuration file")
+	flag.StringP("config", "f", "", "Path to configuration directory")
+	// flag.StringP("queries", "q", "", "Path to queries directory")
 	flag.Parse()
 
 	// Read yaml config
