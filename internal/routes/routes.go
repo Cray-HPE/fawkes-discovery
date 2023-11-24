@@ -1,20 +1,21 @@
 package routes
 
 import (
+	"discovery/internal/globaldata"
 	"discovery/internal/utils"
 
 	"github.com/gin-gonic/gin"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func Routes(router *gin.Engine, bind string, dbClient *mongo.Client, database string, collection string) {
-	router.NoRoute(func(c *gin.Context) {
+// func Routes(router *gin.Engine, bind string, dbClient *mongo.Client, database string, collection string) {
+func Routes(disco globaldata.Discovery) {
+	disco.Router.NoRoute(func(c *gin.Context) {
 		c.JSON(404, gin.H{"message": "Route not found"})
 	})
 
-	router.GET("/", utils.GetMachines(dbClient, database, collection))
+	disco.Router.GET("/", utils.GetMachines(disco))
 	//router.GET("/:id", utils.GetMachineByID(dbClient, database, collection))
-	router.GET("/class", utils.GetMachineByID(dbClient, database, collection))
-	router.POST("/", utils.PostMachine(dbClient, database, collection))
-	router.Run(bind)
+	disco.Router.GET("/class", utils.GetMachineByID(disco))
+	disco.Router.POST("/", utils.PostMachine(disco))
+	disco.Router.Run(disco.Bind)
 }
