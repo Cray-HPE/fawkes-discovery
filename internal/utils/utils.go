@@ -77,8 +77,9 @@ func GetMachines(disco globaldata.Discovery) gin.HandlerFunc {
 func GetMachineByFilter(disco globaldata.Discovery) gin.HandlerFunc {
 	fn := func(c *gin.Context) {
 		query := c.Request.URL.Query()
-		var filter bson.D
 		projection := bson.D{{Key: "null", Value: 0}}
+		var filter bson.D
+		var count bool
 
 		for filterK, filterV := range query {
 			filterValue := filterV[0]
@@ -88,6 +89,10 @@ func GetMachineByFilter(disco globaldata.Discovery) gin.HandlerFunc {
 				filterK = "_id"
 			case "idonly":
 				projection = bson.D{{Key: "_id", Value: 1}}
+				continue
+			case "count":
+				projection = bson.D{{Key: "_id", Value: 1}}
+				count = true
 				continue
 			}
 
@@ -113,7 +118,11 @@ func GetMachineByFilter(disco globaldata.Discovery) gin.HandlerFunc {
 			c.JSON(404, gin.H{"message": "No nodes found."})
 			log.Println(err)
 		}
-		c.IndentedJSON(http.StatusOK, results)
+		if count {
+			c.IndentedJSON(http.StatusOK, len(results))
+		} else {
+			c.IndentedJSON(http.StatusOK, results)
+		}
 
 	}
 	return gin.HandlerFunc(fn)
@@ -183,7 +192,6 @@ func ClassifyMachine(disco globaldata.Discovery) {
 			return
 		}
 		cursor.All(context.TODO(), &results)
-		// log.Println(fmt.Sprint(results))
 	}
 	log.Println("Node classification compltete.")
 }
