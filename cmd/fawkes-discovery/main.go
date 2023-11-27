@@ -26,13 +26,16 @@ func main() {
 	flag.StringP("class", "t", "", "Path to class file")
 	flag.Parse()
 
-	// Read yaml config
+	// Set and read config
 	config := viper.New()
-	config.SetConfigType("yaml")
-	config.SetConfigName("fawkes-discovery")
-	config.AddConfigPath(flag.Lookup("config").Value.String())
-	config.AddConfigPath(".")
-	config.AddConfigPath("/etc/fawkes-discovery")
+	configDefault := "/etc/fawkes-discovery/fawkes-discovery.yml"
+
+	if flag.Lookup("config").Value.String() == "" {
+		config.SetConfigFile(configDefault)
+	} else {
+		userConfig := flag.Lookup("config").Value.String()
+		config.SetConfigFile(userConfig)
+	}
 
 	err := config.ReadInConfig()
 	if err != nil {
@@ -52,6 +55,7 @@ func main() {
 		Router:      gin.Default(),
 	}
 
+	// Gracefully handle SIGINT
 	go func() {
 		sigchan := make(chan os.Signal)
 		signal.Notify(sigchan, os.Interrupt)
@@ -61,45 +65,21 @@ func main() {
 		os.Exit(0)
 	}()
 
+	// Watch node class file for changes
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer watcher.Close()
-	go watchClassfile(watcher, disco)
-
+	go utils.WatchClassfile(watcher, disco)
 	classfileDir := filepath.Dir(disco.Classfile)
 	err = watcher.Add(classfileDir)
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	// Classify existing machines and start listening for new connections
+	utils.ClassifyMachine(disco)
 	routes.Routes(disco)
 	<-make(chan struct{})
-	utils.CloseDBconn(disco.Dbclient)
-}
-
-func watchClassfile(w *fsnotify.Watcher, disco globaldata.Discovery) {
-	i := 0
-	for {
-		select {
-		// Read from Errors.
-		case err, ok := <-w.Errors:
-			if !ok { // Channel was closed (i.e. Watcher.Close() was called).
-				return
-			}
-			log.Println("ERROR: ", err)
-		// Read from Events.
-		case e, ok := <-w.Events:
-			if !ok { // Channel was closed (i.e. Watcher.Close() was called).
-				return
-			}
-
-			if e.Name == disco.Classfile {
-				i++
-				log.Println(i, e)
-				utils.ClassifyMachine(disco)
-			}
-		}
-	}
 }

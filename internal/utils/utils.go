@@ -8,8 +8,11 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
+	"strings"
 	"time"
 
+	"github.com/fsnotify/fsnotify"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -49,7 +52,6 @@ func CloseDBconn(dbClient *mongo.Client) {
 	log.Println("Disconnected from MongoDB.")
 }
 
-// func GetMachines(dbClient *mongo.Client, database string, collection string) gin.HandlerFunc {
 func GetMachines(disco globaldata.Discovery) gin.HandlerFunc {
 	fn := func(c *gin.Context) {
 		collection := disco.Dbclient.Database(disco.Database).Collection(disco.Collection)
@@ -63,32 +65,56 @@ func GetMachines(disco globaldata.Discovery) gin.HandlerFunc {
 		var records []bson.M
 		if err = cursor.All(context.Background(), &records); err != nil {
 			c.JSON(404, gin.H{"message": "No records found."})
-			log.Print(err)
+			log.Println(err)
 		}
 
 		c.IndentedJSON(http.StatusOK, records)
-		//ClassifyMachine(collection)
 	}
 
 	return gin.HandlerFunc(fn)
 }
 
-func GetMachineByID(disco globaldata.Discovery) gin.HandlerFunc {
+func GetMachineByFilter(disco globaldata.Discovery) gin.HandlerFunc {
 	fn := func(c *gin.Context) {
 		query := c.Request.URL.Query()
+		var filter bson.D
+		projection := bson.D{{Key: "null", Value: 0}}
 
+		for filterK, filterV := range query {
+			filterValue := filterV[0]
+
+			switch key := strings.ToLower(filterK); key {
+			case "serial":
+				filterK = "_id"
+			case "idonly":
+				projection = bson.D{{Key: "_id", Value: 1}}
+				continue
+			}
+
+			// if the value can be converted to int, convert it
+			intvalue, converr := strconv.Atoi(filterValue)
+
+			if converr == nil {
+				filter = append(filter, bson.E{Key: filterK, Value: intvalue})
+			} else {
+				filter = append(filter, bson.E{Key: filterK, Value: filterValue})
+			}
+		}
 		collection := disco.Dbclient.Database(disco.Database).Collection(disco.Collection)
 
-		filter := bson.D{{Key: "_id", Value: query["serial"][0]}}
-
-		var result bson.M
-		err := collection.FindOne(context.Background(), filter).Decode(&result)
+		opts := options.Find().SetProjection(projection)
+		cursor, err := collection.Find(context.Background(), filter, opts)
 		if err != nil {
-			c.JSON(404, gin.H{"message": "Machine not found."})
+			log.Println(err)
 		}
-		c.IndentedJSON(http.StatusOK, result)
 
-		ClassifyMachine(disco)
+		var results []bson.M
+		if err = cursor.All(context.Background(), &results); err != nil {
+			c.JSON(404, gin.H{"message": "No nodes found."})
+			log.Println(err)
+		}
+		c.IndentedJSON(http.StatusOK, results)
+
 	}
 	return gin.HandlerFunc(fn)
 }
@@ -141,6 +167,8 @@ func PostMachine(disco globaldata.Discovery) gin.HandlerFunc {
 }
 
 func ClassifyMachine(disco globaldata.Discovery) {
+	log.Println("Starting node classification.")
+
 	collection := disco.Dbclient.Database(disco.Database).Collection(disco.Collection)
 	// Parse mongo queries file
 	querymap := LoadNodeClasses(disco)
@@ -150,26 +178,61 @@ func ClassifyMachine(disco globaldata.Discovery) {
 		cursor, err := collection.Aggregate(context.Background(), querymap[class])
 
 		if err != nil {
-			panic(err)
+			log.Println("Mongo query error in: ", disco.Classfile)
+			log.Println(err)
+			return
 		}
 		cursor.All(context.TODO(), &results)
+		// log.Println(fmt.Sprint(results))
 	}
+	log.Println("Node classification compltete.")
 }
 
 func LoadNodeClasses(disco globaldata.Discovery) map[string]interface{} {
-	time.Sleep(100 * time.Millisecond)
+	// FIXME added sleep to prevent race condition when renaming watched file (i.e. vim saves)
+	time.Sleep(200 * time.Millisecond)
+
 	jsonQueriesFile, queryerr := os.Open(disco.Classfile)
+
 	if queryerr != nil {
-		log.Println("HERE")
 		log.Println(queryerr)
 	}
+
 	jsonQueries, _ := io.ReadAll(jsonQueriesFile)
 
 	var querymap map[string]interface{}
+
 	err := json.Unmarshal([]byte(jsonQueries), &querymap)
 	if err != nil {
-		log.Fatal(err)
+		log.Println("json syntax error in: ", disco.Classfile)
+		log.Println(err)
 	}
 
 	return querymap
+}
+
+func WatchClassfile(w *fsnotify.Watcher, disco globaldata.Discovery) {
+	i := 0
+	for {
+		select {
+		case err, ok := <-w.Errors:
+			if !ok {
+				return
+			}
+			log.Println("ERROR: ", err)
+
+		case e, ok := <-w.Events:
+			if !ok {
+				return
+			}
+
+			if e.Name == disco.Classfile {
+				if e.Has(fsnotify.Write) || e.Has(fsnotify.Create) {
+					i++
+					log.Println(i, e)
+					ClassifyMachine(disco)
+				}
+			}
+		}
+	}
 }
