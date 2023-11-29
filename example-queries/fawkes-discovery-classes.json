@@ -1,10 +1,12 @@
 {
     "nodeClass": [
       { "$unwind": "$storage" },
-      { "$match": { "$or": [ { "storage.id": "^nvme", "storage.class": "storage" }, { "storage.id": { "$regex": "^sata.*" }, "storage.class": "storage" }, { "storage.id": { "$regex": "^sas" }, "storage.class": "storage" } ] } },
+      { "$unwind": "$disk" },
+      { "$unwind": "$volume" },
+      { "$match": { "$and": [ { "storage.class": "storage", "$or": [ { "storage.id": "^nvme" }, { "storage.id": { "$regex": "^sata.*" } }, { "storage.id": { "$regex": "^sas" } } ] } ] } },
       { "$group": { "_id": "$_id", "storage": { "$addToSet": "$storage" } } },
-      { "$project": { "diskcount": { "$size": "$storage" } } },
-      { "$project": { "nodeClass": { "$switch": { "branches": [ { "case": { "$lte": [ "$diskcount", "2" ] }, "then": "hypervisor" }, { "case": { "$gte": [ "$diskcount", "6" ] }, "then": "storage" } ], "default": "" } } } },
+      { "$project": { "diskCount": { "$size": "$storage" } } },
+      { "$project": { "diskCount": "$diskCount", "nodeClass": { "$switch": { "branches": [ { "case": { "$lte": [ "$diskCount", "2" ] }, "then": "hypervisor" }, { "case": { "$gte": [ "$diskCount", "6" ] }, "then": "storage" } ], "default": "" } } } },
       { "$merge": { "into": "lshw", "on": "_id", "whenMatched": "merge" } }
     ],
     "totalRamGB": [
