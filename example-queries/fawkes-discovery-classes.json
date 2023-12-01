@@ -3,7 +3,7 @@
       { "$unwind": "$storage" },
       { "$unwind": "$disk" },
       { "$unwind": "$volume" },
-      { "$match": { "$and": [ { "storage.class": "storage", "$or": [ { "storage.id": "^nvme" }, { "storage.id": { "$regex": "^sata.*" } }, { "storage.id": { "$regex": "^sas" } } ] } ] } },
+      { "$match": { "$and": [ { "storage.class": "storage", "$or": [ { "storage.id": { "$regex": "^nvme.*" } }, { "storage.id": { "$regex": "^sata.*" } }, { "storage.id": { "$regex": "^sas.*" } } ] } ] } },
       { "$group": { "_id": "$_id", "storage": { "$addToSet": "$storage" } } },
       { "$project": { "diskCount": { "$size": "$storage" } } },
       { "$project": { "diskCount": "$diskCount", "nodeClass": { "$switch": { "branches": [ { "case": { "$lte": [ "$diskCount", "2" ] }, "then": "hypervisor" }, { "case": { "$gte": [ "$diskCount", "6" ] }, "then": "storage" } ], "default": "" } } } },

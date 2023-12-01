@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"os"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
@@ -76,52 +75,61 @@ func GetMachines(disco globaldata.Discovery) gin.HandlerFunc {
 
 func GetMachineByFilter(disco globaldata.Discovery) gin.HandlerFunc {
 	fn := func(c *gin.Context) {
-		query := c.Request.URL.Query()
-		projection := bson.D{{Key: "null", Value: 0}}
-		var filter bson.D
-		var count bool
+		query := c.Request.URL.Query() // incoming query
+		projection := bson.D{}         // will contain the fields the user wants to see
+		filter := bson.D{}             // will contain the field=value the user wants to search for
+		count := false                 // default to returning entire document vs. quantity
+		qfields := false               // default to returning entire document vs. fields queried
 
-		for filterK, filterV := range query {
-			filterValue := filterV[0]
+		if query["count"] != nil {
+			count = true // user wants a count of documents
+		}
 
-			switch key := strings.ToLower(filterK); key {
-			case "serial":
-				filterK = "_id"
-			case "idonly":
-				projection = bson.D{{Key: "_id", Value: 1}}
+		if query["qfields"] != nil {
+			qfields = true // user wants to see only specific fields
+		}
+
+		for filterK, filterV := range query { // loop over user supplied query
+			if filterK == "qfields" || filterK == "count" { // skip operators
 				continue
-			case "count":
-				projection = bson.D{{Key: "_id", Value: 1}}
-				count = true
-				continue
+			} else if filterK == "serial" {
+				filterK = "_id" // helper to allow users to say "serial" vs. "_id"
 			}
 
-			// if the value can be converted to int, convert it
-			intvalue, converr := strconv.Atoi(filterValue)
+			filterValue := filterV[0] // we only care about the first value in the query
 
-			if converr == nil {
-				filter = append(filter, bson.E{Key: filterK, Value: intvalue})
-			} else {
-				filter = append(filter, bson.E{Key: filterK, Value: filterValue})
+			if qfields {
+				projection = append(projection, bson.E{Key: filterK, Value: 1}) // define the returned fields
+			}
+
+			if filterValue != "" { // set up our filter with provided value (ex. totalRamGB=256)
+				intvalue, converr := strconv.Atoi(filterValue) // if the value can be converted to int, convert it
+
+				if converr == nil {
+					filter = append(filter, bson.E{Key: filterK, Value: intvalue})
+				} else {
+					filter = append(filter, bson.E{Key: filterK, Value: filterValue})
+				}
 			}
 		}
-		collection := disco.Dbclient.Database(disco.Database).Collection(disco.Collection)
+		collection := disco.Dbclient.Database(disco.Database).Collection(disco.Collection) // define database/collection
 
-		opts := options.Find().SetProjection(projection)
-		cursor, err := collection.Find(context.Background(), filter, opts)
+		opts := options.Find().SetProjection(projection) // mongo Find options (provide projection)
+
+		cursor, err := collection.Find(context.Background(), filter, opts) // run mongo Find query
 		if err != nil {
 			log.Println(err)
 		}
 
 		var results []bson.M
-		if err = cursor.All(context.Background(), &results); err != nil {
+		if err = cursor.All(context.Background(), &results); err != nil { // dump documents into unordered primitive.M
 			c.JSON(404, gin.H{"message": "No nodes found."})
 			log.Println(err)
 		}
 		if count {
-			c.IndentedJSON(http.StatusOK, len(results))
+			c.IndentedJSON(http.StatusOK, len(results)) // prints count of documents if count=true
 		} else {
-			c.IndentedJSON(http.StatusOK, results)
+			c.IndentedJSON(http.StatusOK, results) // prints documents (complete or partial doc is toggled with qfields)
 		}
 
 	}
