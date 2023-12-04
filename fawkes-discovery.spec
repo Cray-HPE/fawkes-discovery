@@ -59,6 +59,7 @@ Requires:      lshw
 %define image_db_tag 7.0.2
 %define image_db docker.io/library/mongo:%{image_db_tag}
 %define image_db_tar %{name}-mongodb-%{image_db_tag}.tar
+%define bmcbin lsipmi
 
 %description
 An http endpoint for bare metal hardware data.
@@ -91,6 +92,7 @@ install -D -m 0755 -t %{buildroot}%{_sbindir} pod-init/fawkes-discovery-frontend
 install -D -m 0755 -t %{buildroot}%{_sbindir} pod-init/fawkes-discovery-database-setup.sh
 install -D -m 0644 -t %{buildroot}%{imagedir} %{image_frontend_tar}
 install -D -m 0644 -t %{buildroot}%{imagedir} %{image_db_tar}
+install -D -m 0755 -t %{buildroot}%{_sbindir} %{bmcbin}
 
 %clean
 rm -f %{image_frontend_tar}
@@ -162,4 +164,5 @@ Adds a systemd service for running fawkes-discovery-client
 %license LICENSE
 %doc README.adoc
 %attr(755, root, root) %{_sbindir}/fawkes-lshw.sh
+%attr(755, root, root) %{_sbindir}/lsipmi
 %{_unitdir}/fawkes-discovery-client.service

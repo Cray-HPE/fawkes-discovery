@@ -101,6 +101,21 @@ pipeline {
                         }
                     }
 
+                    stage('Build: lsipmi') {
+                        agent {
+                            docker {
+                                label "${PRIMARY_NODE}"
+                                reuseNode true
+                                args "-v /home/jenkins/.ssh:/home/jenkins/.ssh --platform linux/${DOCKER_ARCH}"
+                                image "${goImage}:${env.GO_VERSION}-${DOCKER_ARCH}"
+                            }
+                        }
+
+                        steps {
+                            sh "make lsipmi"
+                        }
+                    }
+
                     stage('Prepare: RPMs') {
                         agent {
                             docker {

@@ -1,3 +1,4 @@
+---
 ######################
 # Discovery Server api
 ######################
@@ -7,5 +8,12 @@ bind: ":8080"
 # MongoDB
 ######################
 mongoserver: "mongodb-pod:27017"
+
 database: "discovery"
 collection: "lshw"
+
+######################
+# Mongo classifiers
+######################
+class: "/etc/fawkes-discovery/fawkes-discovery-classes.json"
+
