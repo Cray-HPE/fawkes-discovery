@@ -28,7 +28,7 @@ spec:
         - containerPort:
           hostPort:
         volumeMounts:
-        - mountPath: /app/fawkes-discovery.yml
+        - mountPath: /etc/fawkes-discovery/fawkes-discovery.yml
           name: fawkes-discovery-config
       volumes:
       - hostPath:
