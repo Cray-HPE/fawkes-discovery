@@ -47,4 +47,6 @@ for class in "${CLASSES[@]}"; do
     OUTPUT=$(jq ". += {${class}: ${class_data}}" <<< "${OUTPUT}")
 done
 
+OUTPUT=$(jq ". += {bmc: $(lsipmi)}" <<< "${OUTPUT}")
+
 jq -r '. += {"_id": .system[] | select(.serial) | .serial}' <<< "${OUTPUT}"
