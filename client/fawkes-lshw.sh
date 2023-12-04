@@ -1,4 +1,3 @@
-#!/bin/bash
 #
 # MIT License
 #
@@ -28,7 +27,7 @@ OUTPUT="{}"
 CLASSES=("bridge"
          "bus"
          "communication"
-         "disk"
+         #"disk"
          "display"
          "generic"
          "input"
@@ -37,9 +36,9 @@ CLASSES=("bridge"
          "network"
          "power"
          "processor"
-         "storage"
+         #"storage"
          "system"
-         "volume"
+         #"volume"
         )
 
 for class in "${CLASSES[@]}"; do
@@ -47,7 +46,10 @@ for class in "${CLASSES[@]}"; do
     OUTPUT=$(jq ". += {${class}: ${class_data}}" <<< "${OUTPUT}")
 done
 
-LSIPMI="$(lsipmi)"
-OUTPUT=$(jq ". += {bmc: ${lsipmi}}" <<< "${OUTPUT}")
+LSBLK=$(lsblk -b -l -d -o PATH,TYPE,SUBSYSTEMS,TRAN,HOTPLUG,SERIAL,SIZE -e7 -e43 -e252 --json)
+OUTPUT=$(jq ". += ${LSBLK}" <<< "${OUTPUT}")
+
+IPMIDUMP=$(lsipmi)
+OUTPUT=$(jq ". += {bmc: ${IPMIDUMP}}" <<< "${OUTPUT}")
 
 jq -r '. += {"_id": .system[] | select(.serial) | .serial}' <<< "${OUTPUT}"
