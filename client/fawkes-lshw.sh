@@ -1,3 +1,4 @@
+#!/bin/bash
 #
 # MIT License
 #
@@ -21,13 +22,10 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-set -euo pipefail
-
 OUTPUT="{}"
 CLASSES=("bridge"
          "bus"
          "communication"
-         #"disk"
          "display"
          "generic"
          "input"
@@ -36,20 +34,28 @@ CLASSES=("bridge"
          "network"
          "power"
          "processor"
-         #"storage"
          "system"
-         #"volume"
         )
 
+# Get IPMI info
+IPMIDUMP=$(lsipmi)
+if [[ -z  "${IPMIDUMP}" ]]; then
+  echo "No IPMI device found."
+  echo "Exitting..."
+  exit 1
+else
+  OUTPUT=$(jq ". += {bmc: ${IPMIDUMP}}" <<< "${OUTPUT}")
+fi
+
+# Get block device info
+LSBLK=$(lsblk -b -l -d -o PATH,TYPE,SUBSYSTEMS,TRAN,HOTPLUG,SERIAL,SIZE -e7 -e43 -e252 --json)
+OUTPUT=$(jq ". += ${LSBLK}" <<< "${OUTPUT}")
+
+# Get lshw classes listed in $CLASSES
 for class in "${CLASSES[@]}"; do
     class_data=$(lshw -json -c ${class})
     OUTPUT=$(jq ". += {${class}: ${class_data}}" <<< "${OUTPUT}")
 done
 
-LSBLK=$(lsblk -b -l -d -o PATH,TYPE,SUBSYSTEMS,TRAN,HOTPLUG,SERIAL,SIZE -e7 -e43 -e252 --json)
-OUTPUT=$(jq ". += ${LSBLK}" <<< "${OUTPUT}")
-
-IPMIDUMP=$(lsipmi)
-OUTPUT=$(jq ". += {bmc: ${IPMIDUMP}}" <<< "${OUTPUT}")
-
+# Set "_id" to the value of the "serial" field
 jq -r '. += {"_id": .system[] | select(.serial) | .serial}' <<< "${OUTPUT}"
