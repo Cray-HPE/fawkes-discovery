@@ -24,8 +24,9 @@
 
 set -euo pipefail
 
-FRONTEND_VERSION="@@frontend-version@@"
-FRONTEND_IMAGE="artifactory.algol60.net/fawkes-docker/stable/fawkes-discovery:${FRONTEND_VERSION}"
+BUCKET="@@bucket@@" # ex. fawkes-docker/unstable
+FRONTEND_VERSION="@@frontend-version@@" # ex. 0.0.1_22_g21739a5
+FRONTEND_IMAGE="artifactory.algol60.net/${BUCKET}/fawkes-discovery:${FRONTEND_VERSION}"
 FRONTEND_IMAGE_PATH="/var/lib/cray/container-images/fawkes-discovery/fawkes-discovery-${FRONTEND_VERSION}.tar"
 
 # Load fawkes frontend image if it doesn't already exist

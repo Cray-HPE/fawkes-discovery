@@ -77,7 +77,9 @@ skopeo copy --additional-tag %{image_db} docker://%{image_db} docker-archive:%{i
 sed -e 's,@@fawkes-discovery-frontend-image@@,%{image_frontend},' -i deployments/discovery-frontend-template.yml
 sed -e 's,@@fawkes-discovery-db-image@@,%{image_db},' deployments/discovery-database-template.yml > deployments/discovery-database.yml
 sed -e 's,@@mongo-version@@,%{image_db_tag},' -i pod-init/fawkes-discovery-database-setup.sh
+sed -e 's,@@bucket@@,%{bucket},' -i pod-init/fawkes-discovery-frontend-setup.sh
 sed -e 's,@@frontend-version@@,%{image_frontend_tag},' -i pod-init/fawkes-discovery-frontend-setup.sh
+
 
 %install
 install -D -m 0644 -t %{buildroot}%{_sysconfdir}/%{name} configs/frontend/%{name}.yml
