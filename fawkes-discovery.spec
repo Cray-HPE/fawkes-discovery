@@ -86,6 +86,7 @@ install -D -m 0644 -t %{buildroot}%{_sysconfdir}/%{name} configs/frontend/%{name
 install -D -m 0644 -t %{buildroot}%{_sysconfdir}/%{name} configs/mongo/mongo-init.js
 install -D -m 0644 -t %{buildroot}%{_sysconfdir}/%{name} deployments/discovery-database.yml
 install -D -m 0644 -t %{buildroot}%{_sysconfdir}/%{name} deployments/discovery-frontend-template.yml
+install -D -m 0644 -t %{buildroot}%{_sysconfdir}/%{name} classification/fawkes-discovery-classes.json
 install -D -m 0644 -t %{buildroot}%{_unitdir} pod-init/fawkes-discovery-frontend.service
 install -D -m 0644 -t %{buildroot}%{_unitdir} pod-init/fawkes-discovery-database.service
 install -D -m 0644 -t %{buildroot}%{_unitdir} client/fawkes-discovery-client.service
@@ -134,6 +135,7 @@ fi
 %attr(644, root, root) %{_sysconfdir}/%{name}/mongo-init.js
 %attr(644, root, root) %{_sysconfdir}/%{name}/discovery-database.yml
 %attr(644, root, root) %{_sysconfdir}/%{name}/discovery-frontend-template.yml
+%attr(644, root, root) %{_sysconfdir}/%{name}/fawkes-discovery-classes.json
 %attr(644, root, root) %{_unitdir}/fawkes-discovery-frontend.service
 %attr(644, root, root) %{_unitdir}/fawkes-discovery-database.service
 %attr(755, root, root) %{_sbindir}/fawkes-discovery-frontend-setup.sh
