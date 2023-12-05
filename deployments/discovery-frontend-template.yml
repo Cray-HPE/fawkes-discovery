@@ -30,8 +30,14 @@ spec:
         volumeMounts:
         - mountPath: /etc/fawkes-discovery/fawkes-discovery.yml
           name: fawkes-discovery-config
+        - mountPath: /etc/fawkes-discovery/fawkes-discovery-classes.json
+          name: fawkes-discovery-classes
       volumes:
       - hostPath:
           path: /etc/fawkes-discovery/fawkes-discovery.yml
           type: File
         name: fawkes-discovery-config
+      - hostPath:
+          path: /etc/fawkes-discovery/fawkes-discovery-classes.json
+          type: File
+        name: fawkes-discovery-classes

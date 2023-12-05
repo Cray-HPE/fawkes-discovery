@@ -201,7 +201,7 @@ func ClassifyMachine(disco globaldata.Discovery) {
 		}
 		cursor.All(context.TODO(), &results)
 	}
-	log.Println("Node classification compltete.")
+	log.Println("Node classification complete.")
 }
 
 func LoadNodeClasses(disco globaldata.Discovery) map[string]interface{} {
