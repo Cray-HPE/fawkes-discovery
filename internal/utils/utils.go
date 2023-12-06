@@ -230,7 +230,6 @@ func LoadNodeClasses(disco globaldata.Discovery) map[string]interface{} {
 
 func WatchClassfile(w *fsnotify.Watcher, disco globaldata.Discovery) {
 	i := 0
-	// eventTime := time.Now()
 	var eventTime time.Time
 
 	for {
