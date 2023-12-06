@@ -71,9 +71,7 @@ func main() {
 		log.Fatal(err)
 	}
 	defer watcher.Close()
-
 	go utils.WatchClassfile(watcher, disco)
-
 	classfileDir := filepath.Dir(disco.Classfile)
 	err = watcher.Add(classfileDir)
 	if err != nil {

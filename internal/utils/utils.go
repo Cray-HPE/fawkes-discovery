@@ -4,7 +4,6 @@ import (
 	"context"
 	"discovery/internal/globaldata"
 	"encoding/json"
-	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -247,14 +246,11 @@ func WatchClassfile(w *fsnotify.Watcher, disco globaldata.Discovery) {
 			if e.Name == disco.Classfile {
 				if e.Has(fsnotify.Write) || e.Has(fsnotify.Create) {
 					sinceEventTime := time.Since(eventTime).Milliseconds()
-					fmt.Println("TIMEDIFF: ", sinceEventTime)
 
 					if sinceEventTime >= 500 {
 						log.Println(e)
 						ClassifyMachine(disco)
 						eventTime = time.Now()
-					} else {
-						log.Println("skipping node classification")
 					}
 				}
 			}
