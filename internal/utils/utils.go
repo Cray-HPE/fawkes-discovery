@@ -4,6 +4,7 @@ import (
 	"context"
 	"discovery/internal/globaldata"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -206,7 +207,7 @@ func ClassifyMachine(disco globaldata.Discovery) {
 
 func LoadNodeClasses(disco globaldata.Discovery) map[string]interface{} {
 	// FIXME added sleep to prevent race condition when renaming watched file (i.e. vim saves)
-	time.Sleep(200 * time.Millisecond)
+	// time.Sleep(200 * time.Millisecond)
 
 	jsonQueriesFile, queryerr := os.Open(disco.Classfile)
 
@@ -229,6 +230,8 @@ func LoadNodeClasses(disco globaldata.Discovery) map[string]interface{} {
 
 func WatchClassfile(w *fsnotify.Watcher, disco globaldata.Discovery) {
 	i := 0
+	eventTime := time.Now()
+
 	for {
 		select {
 		case err, ok := <-w.Errors:
@@ -244,11 +247,19 @@ func WatchClassfile(w *fsnotify.Watcher, disco globaldata.Discovery) {
 
 			if e.Name == disco.Classfile {
 				if e.Has(fsnotify.Write) || e.Has(fsnotify.Create) {
-					i++
-					log.Println(i, e)
-					ClassifyMachine(disco)
+					sinceEventTime := time.Since(eventTime).Milliseconds()
+					fmt.Println("TIMEDIFF: ", sinceEventTime)
+
+					if sinceEventTime >= 500 {
+						log.Println(i, e)
+						ClassifyMachine(disco)
+						i++
+					} else {
+						log.Println("skipping node classification")
+					}
 				}
 			}
+			eventTime = time.Now()
 		}
 	}
 }

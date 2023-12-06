@@ -29,6 +29,7 @@ spec:
           hostPort:
         volumeMounts:
         - mountPath: /etc/fawkes-discovery
+          readOnly: true
           name: fawkes-discovery-config-dir
       volumes:
       - hostPath:
