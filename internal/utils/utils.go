@@ -250,7 +250,7 @@ func WatchClassfile(w *fsnotify.Watcher, disco globaldata.Discovery) {
 					fmt.Println("TIMEDIFF: ", sinceEventTime)
 
 					if sinceEventTime >= 500 {
-						log.Println(i, e)
+						log.Println(e)
 						ClassifyMachine(disco)
 						eventTime = time.Now()
 					} else {
