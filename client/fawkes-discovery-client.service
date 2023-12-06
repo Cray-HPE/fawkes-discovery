@@ -9,7 +9,7 @@ Type=oneshot
 Restart=on-failure
 RestartSec=20s
 Environment=SERVER=http://bootserver
-ExecStart=/bin/sh -c "fawkes-lshw.sh | \
+ExecStart=/bin/sh -c "fawkes-discovery-client.sh | \
                       curl -s \
                         -X POST \
                         -H 'Content-Type: application/json' \
