@@ -230,7 +230,8 @@ func LoadNodeClasses(disco globaldata.Discovery) map[string]interface{} {
 
 func WatchClassfile(w *fsnotify.Watcher, disco globaldata.Discovery) {
 	i := 0
-	eventTime := time.Now()
+	// eventTime := time.Now()
+	var eventTime time.Time
 
 	for {
 		select {
@@ -258,8 +259,8 @@ func WatchClassfile(w *fsnotify.Watcher, disco globaldata.Discovery) {
 						log.Println("skipping node classification")
 					}
 				}
+				eventTime = time.Now()
 			}
-			eventTime = time.Now()
 		}
 	}
 }

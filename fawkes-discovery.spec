@@ -135,7 +135,7 @@ fi
 %attr(644, root, root) %{_sysconfdir}/%{name}/mongo-init.js
 %attr(644, root, root) %{_sysconfdir}/%{name}/discovery-database.yml
 %attr(644, root, root) %{_sysconfdir}/%{name}/discovery-frontend-template.yml
-%attr(644, root, root) %{_sysconfdir}/%{name}/fawkes-discovery-classes.json
+%config(noreplace) %attr(644, root, root) %{_sysconfdir}/%{name}/fawkes-discovery-classes.json
 %attr(644, root, root) %{_unitdir}/fawkes-discovery-frontend.service
 %attr(644, root, root) %{_unitdir}/fawkes-discovery-database.service
 %attr(755, root, root) %{_sbindir}/fawkes-discovery-frontend-setup.sh
