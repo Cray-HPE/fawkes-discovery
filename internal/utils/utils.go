@@ -229,7 +229,6 @@ func LoadNodeClasses(disco globaldata.Discovery) map[string]interface{} {
 }
 
 func WatchClassfile(w *fsnotify.Watcher, disco globaldata.Discovery) {
-	i := 0
 	var eventTime time.Time
 
 	for {
@@ -253,12 +252,11 @@ func WatchClassfile(w *fsnotify.Watcher, disco globaldata.Discovery) {
 					if sinceEventTime >= 500 {
 						log.Println(i, e)
 						ClassifyMachine(disco)
-						i++
+						eventTime = time.Now()
 					} else {
 						log.Println("skipping node classification")
 					}
 				}
-				eventTime = time.Now()
 			}
 		}
 	}
