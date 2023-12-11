@@ -80,7 +80,7 @@ func main() {
 	}
 
 	// Classify existing machines and start listening for new connections
-	utils.ClassifyAllMachines(disco)
+	utils.Classify(disco, "")
 	routes.Routes(disco)
 	<-make(chan struct{})
 }
