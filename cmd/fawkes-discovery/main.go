@@ -46,13 +46,14 @@ func main() {
 
 	// Set up variables from config/flags
 	disco := globaldata.Discovery{
-		Bind:        config.GetString("bind"),
-		Mongoserver: config.GetString("mongoserver"),
-		Database:    config.GetString("database"),
-		Collection:  config.GetString("collection"),
-		Classfile:   config.GetString("class"),
-		Dbclient:    utils.OpenDBconn(config.GetString("mongoserver")),
-		Router:      gin.Default(),
+		Bind:           config.GetString("bind"),
+		Mongoserver:    config.GetString("mongoserver"),
+		Database:       config.GetString("database"),
+		Collection:     config.GetString("collection"),
+		CollectionOrig: "discoveryOrig",
+		Classfile:      config.GetString("class"),
+		Dbclient:       utils.OpenDBconn(config.GetString("mongoserver")),
+		Router:         gin.Default(),
 	}
 
 	// Gracefully handle SIGINT
@@ -79,7 +80,7 @@ func main() {
 	}
 
 	// Classify existing machines and start listening for new connections
-	utils.ClassifyMachine(disco)
+	utils.ClassifyAllMachines(disco)
 	routes.Routes(disco)
 	<-make(chan struct{})
 }

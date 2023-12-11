@@ -6,11 +6,12 @@ import (
 )
 
 type Discovery struct {
-	Bind        string
-	Mongoserver string
-	Database    string
-	Collection  string
-	Classfile   string
-	Dbclient    *mongo.Client
-	Router      *gin.Engine
+	Bind           string
+	Mongoserver    string
+	Database       string
+	Collection     string
+	CollectionOrig string
+	Classfile      string
+	Dbclient       *mongo.Client
+	Router         *gin.Engine
 }

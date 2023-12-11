@@ -12,7 +12,7 @@ func Routes(disco globaldata.Discovery) {
 		c.JSON(404, gin.H{"message": "Route not found"})
 	})
 
-	disco.Router.GET("/", utils.GetMachines(disco))
+	disco.Router.GET("/", utils.GetMachineByFilter(disco))
 	disco.Router.GET("/filter", utils.GetMachineByFilter(disco))
 	disco.Router.POST("/", utils.PostMachine(disco))
 	disco.Router.Run(disco.Bind)

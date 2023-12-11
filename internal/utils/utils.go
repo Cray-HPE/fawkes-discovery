@@ -51,28 +51,6 @@ func CloseDBconn(dbClient *mongo.Client) {
 	log.Println("Disconnected from MongoDB.")
 }
 
-func GetMachines(disco globaldata.Discovery) gin.HandlerFunc {
-	fn := func(c *gin.Context) {
-		collection := disco.Dbclient.Database(disco.Database).Collection(disco.Collection)
-
-		cursor, err := collection.Find(context.Background(), bson.M{})
-
-		if err != nil {
-			log.Println(err)
-		}
-
-		var records []bson.M
-		if err = cursor.All(context.Background(), &records); err != nil {
-			c.JSON(404, gin.H{"message": "No records found."})
-			log.Println(err)
-		}
-
-		c.IndentedJSON(http.StatusOK, records)
-	}
-
-	return gin.HandlerFunc(fn)
-}
-
 func GetMachineByFilter(disco globaldata.Discovery) gin.HandlerFunc {
 	fn := func(c *gin.Context) {
 		query := c.Request.URL.Query() // incoming query
@@ -136,11 +114,10 @@ func GetMachineByFilter(disco globaldata.Discovery) gin.HandlerFunc {
 	return gin.HandlerFunc(fn)
 }
 
-// func PostMachine(dbClient *mongo.Client, database string, collection string) gin.HandlerFunc {
 func PostMachine(disco globaldata.Discovery) gin.HandlerFunc {
 	fn := func(c *gin.Context) {
 		body, _ := io.ReadAll(c.Request.Body)
-		collection := disco.Dbclient.Database(disco.Database).Collection(disco.Collection)
+		collectionOrig := disco.Dbclient.Database(disco.Database).Collection(disco.CollectionOrig)
 
 		currentTime := time.Now().Unix()
 
@@ -150,7 +127,7 @@ func PostMachine(disco globaldata.Discovery) gin.HandlerFunc {
 		filter := bson.D{{Key: "_id", Value: newdoc["_id"]}}
 
 		var previousdoc map[string]interface{}
-		finddberr := collection.FindOne(context.Background(), filter).Decode(&previousdoc)
+		finddberr := collectionOrig.FindOne(context.Background(), filter).Decode(&previousdoc)
 
 		if finddberr != nil {
 			if finddberr.Error() != "mongo: no documents in result" {
@@ -168,25 +145,76 @@ func PostMachine(disco globaldata.Discovery) gin.HandlerFunc {
 
 		upsert := true
 		opts := options.FindOneAndReplaceOptions{Upsert: &upsert}
-		replacedberr := collection.FindOneAndReplace(context.Background(), filter, newdoc, &opts).Decode(&previousdoc)
+		replacedbbakerr := collectionOrig.FindOneAndReplace(context.Background(), filter, newdoc, &opts).Decode(&previousdoc)
 
-		if replacedberr != nil {
-			if replacedberr.Error() != "mongo: no documents in result" {
-				c.JSON(500, gin.H{"message": replacedberr})
-				log.Println(replacedberr)
+		if replacedbbakerr != nil {
+			if replacedbbakerr.Error() != "mongo: no documents in result" {
+				c.JSON(500, gin.H{"message": replacedbbakerr})
+				log.Println(replacedbbakerr)
 			}
 		}
-
-		ClassifyMachine(disco)
+		ClassifyOneMachine(disco, newdoc["_id"].(string))
 
 	}
 	return gin.HandlerFunc(fn)
 }
 
-func ClassifyMachine(disco globaldata.Discovery) {
-	log.Println("Starting node classification.")
+func ClassifyOneMachine(disco globaldata.Discovery, id string) {
+	log.Println("Classifying a single node.")
+
+	collectionOrig := disco.Dbclient.Database(disco.Database).Collection(disco.CollectionOrig)
+	collection := disco.Dbclient.Database(disco.Database).Collection(disco.Collection)
+
+	copyone := []map[string]interface{}{
+		{"$match": map[string]string{"_id": id}},
+		{"$merge": map[string]string{"into": "discovery", "on": "_id", "whenMatched": "merge"}},
+	}
+
+	_, aggerr := collectionOrig.Aggregate(context.Background(), copyone) // copy one machine to new collection
+
+	if aggerr != nil {
+		log.Println(aggerr)
+	}
+
+	// Parse mongo queries file
+	querymap := LoadNodeClasses(disco)
+	var results []bson.M
+
+	for _, value := range querymap {
+		matchWithID := []map[string]interface{}{
+			{"$match": map[string]string{"_id": id}},
+		}
+
+		matchWithID = append(matchWithID, value...)
+
+		cursor, err := collection.Aggregate(context.Background(), matchWithID)
+
+		if err != nil {
+			log.Println("Mongo query error in: ", disco.Classfile)
+			log.Println(err)
+			return
+		}
+		cursor.All(context.Background(), &results)
+	}
+
+	log.Println("Classifying a single node complete.")
+}
+
+func ClassifyAllMachines(disco globaldata.Discovery) {
+	log.Println("Classifying all nodes.")
+
+	copyall := []map[string]string{
+		{"$out": disco.Collection},
+	}
 
 	collection := disco.Dbclient.Database(disco.Database).Collection(disco.Collection)
+	collectionOrig := disco.Dbclient.Database(disco.Database).Collection(disco.CollectionOrig)
+	_, aggerr := collectionOrig.Aggregate(context.Background(), copyall) // copy whole collection to new collection
+
+	if aggerr != nil {
+		log.Println(aggerr)
+	}
+
 	// Parse mongo queries file
 	querymap := LoadNodeClasses(disco)
 	var results []bson.M
@@ -199,31 +227,29 @@ func ClassifyMachine(disco globaldata.Discovery) {
 			log.Println(err)
 			return
 		}
-		cursor.All(context.TODO(), &results)
+		cursor.All(context.Background(), &results)
 	}
-	log.Println("Node classification complete.")
+	log.Println("Classifying all nodes complete.")
 }
 
-func LoadNodeClasses(disco globaldata.Discovery) map[string]interface{} {
-	// FIXME added sleep to prevent race condition when renaming watched file (i.e. vim saves)
-	// time.Sleep(200 * time.Millisecond)
-
+func LoadNodeClasses(disco globaldata.Discovery) map[string][]map[string]interface{} {
 	jsonQueriesFile, queryerr := os.Open(disco.Classfile)
 
 	if queryerr != nil {
 		log.Println(queryerr)
 	}
+	defer jsonQueriesFile.Close()
 
 	jsonQueries, _ := io.ReadAll(jsonQueriesFile)
 
-	var querymap map[string]interface{}
+	var querymap map[string][]map[string]interface{}
 
+	// get classes from file
 	err := json.Unmarshal([]byte(jsonQueries), &querymap)
 	if err != nil {
 		log.Println("json syntax error in: ", disco.Classfile)
 		log.Println(err)
 	}
-
 	return querymap
 }
 
@@ -249,7 +275,7 @@ func WatchClassfile(w *fsnotify.Watcher, disco globaldata.Discovery) {
 
 					if sinceEventTime >= 500 {
 						log.Println(e)
-						ClassifyMachine(disco)
+						ClassifyAllMachines(disco)
 						eventTime = time.Now()
 					}
 				}

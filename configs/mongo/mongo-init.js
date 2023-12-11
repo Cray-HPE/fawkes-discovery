@@ -1,6 +1,7 @@
 db = db.getSiblingDB("discovery");
 
-var collExists = db.getCollectionNames().indexOf('lshw') > -1;
+var collExists = db.getCollectionNames().indexOf('discovery') > -1;
+var collExists = db.getCollectionNames().indexOf('discoveryOrig') > -1;
 
 var validator = {
    $jsonSchema: {
@@ -22,7 +23,7 @@ var validator = {
                   "system",
                ],
       properties: {
-         blockdevides: {
+         blockdevices: {
             bsonType: "array",
             description: "blockdevices"
          },
@@ -83,7 +84,9 @@ var validator = {
 };
 
 if (collExists == false) {
-   db.createCollection("lshw", {validator: validator});
+   db.createCollection("discovery", {validator: validator});
+   db.createCollection("discoveryOrig", {validator: validator});
 } else {
-   db.runCommand({ collMod: "lshw", "validator": validator });
+   db.runCommand({ collMod: "discovery", "validator": validator });
+   db.runCommand({ collMod: "discoveryOrig", "validator": validator });
 };
