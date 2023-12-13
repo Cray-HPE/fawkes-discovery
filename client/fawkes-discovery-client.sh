@@ -37,19 +37,14 @@ CLASSES=("bridge"
          "system"
         )
 
-# Get IPMI info
-IPMIDUMP=$(lsipmi)
-if [[ -z  "${IPMIDUMP}" ]]; then
+FAWKES_CLIENT=$(fawkes-client)
+if [[ -z  "${FAWKES_CLIENT}" ]]; then
   echo "No IPMI device found."
   echo "Exitting..."
   exit 1
 else
-  OUTPUT=$(jq ". += {bmc: ${IPMIDUMP}}" <<< "${OUTPUT}")
+  OUTPUT=$(jq ". += ${FAWKES_CLIENT}" <<< "${OUTPUT}")
 fi
-
-# Get block device info
-LSBLK=$(lsblk -b -l -d -o PATH,TYPE,SUBSYSTEMS,TRAN,HOTPLUG,SERIAL,SIZE -e7 -e43 -e252 --json)
-OUTPUT=$(jq ". += ${LSBLK}" <<< "${OUTPUT}")
 
 # Get lshw classes listed in $CLASSES
 for class in "${CLASSES[@]}"; do

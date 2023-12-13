@@ -101,7 +101,7 @@ pipeline {
                         }
                     }
 
-                    stage('Build: lsipmi') {
+                    stage('Build: fawkes-client') {
                         agent {
                             docker {
                                 label "${PRIMARY_NODE}"
@@ -112,7 +112,7 @@ pipeline {
                         }
 
                         steps {
-                            sh "make lsipmi"
+                            sh "make fawkes-client"
                         }
                     }
 
