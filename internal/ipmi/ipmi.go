@@ -18,6 +18,23 @@ type BmcInfo struct {
 	Macaddr   string `json:"macAddress"`
 }
 
+func GetBmcInfo() BmcInfo {
+	bmc := BmcInfo{}
+	laninfo := LanConfig()
+	devinfo := DeviceInfo()
+
+	bmc.Ipaddr = laninfo["ipaddress"]
+	bmc.Macaddr = laninfo["macaddress"]
+	bmc.DeviceID = devinfo["deviceID"]
+	bmc.DeviceRev = devinfo["deviceRevision"]
+	bmc.FwRev = devinfo["firmwareRevision"]
+	bmc.IpmiVer = devinfo["ipmiVersion"]
+	bmc.ManID = devinfo["manufacturerID"]
+	bmc.ProdID = devinfo["productID"]
+
+	return bmc
+}
+
 func LanConfig() map[string]string {
 	netMap := make(map[string]string)
 
