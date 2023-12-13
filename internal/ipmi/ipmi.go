@@ -1,7 +1,6 @@
-package main
+package ipmi
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 
@@ -19,28 +18,7 @@ type BmcInfo struct {
 	Macaddr   string `json:"macAddress"`
 }
 
-func main() {
-	bmc := BmcInfo{}
-	laninfo := lanConfig()
-	devinfo := deviceInfo()
-
-	bmc.Ipaddr = laninfo["ipaddress"]
-	bmc.Macaddr = laninfo["macaddress"]
-	bmc.DeviceID = devinfo["deviceID"]
-	bmc.DeviceRev = devinfo["deviceRevision"]
-	bmc.FwRev = devinfo["firmwareRevision"]
-	bmc.IpmiVer = devinfo["ipmiVersion"]
-	bmc.ManID = devinfo["manufacturerID"]
-	bmc.ProdID = devinfo["productID"]
-
-	bmcjson, err := json.Marshal(bmc)
-	if err != nil {
-		log.Println(err)
-	}
-	fmt.Printf((string(bmcjson)))
-}
-
-func lanConfig() map[string]string {
+func LanConfig() map[string]string {
 	netMap := make(map[string]string)
 
 	const (
@@ -86,7 +64,7 @@ func lanConfig() map[string]string {
 	return netMap
 }
 
-func deviceInfo() map[string]string {
+func DeviceInfo() map[string]string {
 
 	devMap := make(map[string]string)
 
