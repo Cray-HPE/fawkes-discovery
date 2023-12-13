@@ -14,14 +14,14 @@ type Disk struct {
 	Serial  string `json:"serial"`
 }
 
-type FS struct {
+type Partitions struct {
 	UUID    string `json:"uuid"`
 	DevPath string `json:"devpath"`
 }
 
 type Disks struct {
-	Disks []Disk `json:"disks"`
-	FS    []FS   `json:"filesystems"`
+	Disks      []Disk       `json:"blockdevices"`
+	Partitions []Partitions `json:"partitions"`
 }
 
 func GetDisks() Disks {
@@ -59,12 +59,12 @@ func GetDisks() Disks {
 		dname := byUUID + uuid.Name()              // /dev/disk/by-uuid/6ef52745-064c-49a1-971c-40adaff21ed9
 		uuidabs, _ := filepath.EvalSymlinks(dname) // /dev/sda
 
-		singleFS := FS{
+		singlePartition := Partitions{
 			UUID:    dname,
 			DevPath: uuidabs,
 		}
 
-		fullDisks.FS = append(fullDisks.FS, singleFS)
+		fullDisks.Partitions = append(fullDisks.Partitions, singlePartition)
 	}
 
 	return fullDisks
