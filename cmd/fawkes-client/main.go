@@ -7,12 +7,12 @@ import (
 )
 
 type Hwdata struct {
-	Bmc ipmi.BmcInfo `json:"bmc"`
+	ipmi.BmcInfo `json:"bmc"`
 }
 
 func main() {
 	hwdata := Hwdata{
-		Bmc: ipmi.GetBmcInfo(),
+		ipmi.GetBmcInfo(),
 	}
 
 	hwdatajson, err := json.Marshal(hwdata)
