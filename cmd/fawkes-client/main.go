@@ -1,21 +1,18 @@
 package main
 
 import (
-	"discovery/internal/disks"
 	"discovery/internal/ipmi"
 	"encoding/json"
 	"fmt"
 )
 
 type Hwdata struct {
-	Bmc       ipmi.BmcInfo `json:"bmc"`
-	FullDisks disks.Disks  `json:"disks"`
+	Bmc ipmi.BmcInfo `json:"bmc"`
 }
 
 func main() {
 	hwdata := Hwdata{
-		Bmc:       ipmi.GetBmcInfo(),
-		FullDisks: disks.GetDisks(),
+		Bmc: ipmi.GetBmcInfo(),
 	}
 
 	hwdatajson, err := json.Marshal(hwdata)

@@ -37,20 +37,45 @@ CLASSES=("bridge"
          "system"
         )
 
-FAWKES_CLIENT=$(fawkes-client)
-if [[ -z  "${FAWKES_CLIENT}" ]]; then
-  echo "No IPMI device found."
-  echo "Exitting..."
-  exit 1
-else
-  OUTPUT=$(jq ". += ${FAWKES_CLIENT}" <<< "${OUTPUT}")
-fi
-
-# Get lshw classes listed in $CLASSES
+### lshw output begin ###
+# get lshw classes listed in $CLASSES
 for class in "${CLASSES[@]}"; do
     class_data=$(lshw -json -c ${class})
     OUTPUT=$(jq ". += {${class}: ${class_data}}" <<< "${OUTPUT}")
 done
+### lshw output end ###
 
-# Set "_id" to the value of the "serial" field
+### lsblk output begin ###
+# one document with one object for each block device
+# does include USB, does not include loop and network block devices
+export LSBLK=$(lsblk -b -l -d -o PATH,TYPE,SUBSYSTEMS,TRAN,HOTPLUG,SERIAL,SIZE -e7 -e43 -e252 --json)
+
+# get just the block device names. e.g. /dev/sda
+export BLOCK_DEVICES=($(jq '.blockdevices[].path' <<< "${LSBLK}"))
+
+# loop over block devices and find symlinks in /dev/disk that point to the block devices
+for blkdev in "${BLOCK_DEVICES[@]}"; do
+    export blkdev
+    export SYMS=($(find -L /dev/disk/ -samefile "${blkdev}" -printf "%p "))
+
+    # insert the symlink paths into the existing block device document e.g. /dev/disk/by-path/pci-0000:83:00.0-ata-7.0
+    export count=1
+    for sym in "${SYMS[@]}"; do
+        export sym
+        LSBLK=$(jq \
+            --arg sym "${sym}" \
+            --arg count "${count}" \
+            --arg path "${blkdev}" \
+            --arg newpath "path${count}" \
+            '(.blockdevices[] | select(.path == ($path))) += {($newpath): ($sym)}'  <<< "${LSBLK}")
+        ((count++))
+    done
+done
+
+# add the block device objects to the parent json document
+OUTPUT=$(jq ". += ${LSBLK}" <<< "${OUTPUT}")
+### lsblk output end ###
+
+
+# set "_id" to the value of the "serial" field
 jq -r '. += {"_id": .system[] | select(.serial) | .serial}' <<< "${OUTPUT}"
