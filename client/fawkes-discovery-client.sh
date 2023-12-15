@@ -76,7 +76,7 @@ for blkdev in "${BLOCK_DEVICES[@]}"; do
             --arg count "${count}" \
             --arg path "${blkdev}" \
             --arg newpath "path${count}" \
-            '(.blockdevices[] | select(.path == ($path))) += {($newpath): ($sym)}'  <<< "${LSBLK}")
+            '(.blockdevices[] | select(.path == ($path))) += {($newpath): ($sym)}' \<<< "${LSBLK}")
         ((count++))
     done
 done
