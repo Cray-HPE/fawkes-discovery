@@ -22,6 +22,8 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
+set -euo pipefail
+
 OUTPUT="{}"
 CLASSES=("bridge"
          "bus"
@@ -37,12 +39,19 @@ CLASSES=("bridge"
          "system"
         )
 
+# get IPMI info
+IPMIDUMP=$(fawkes-client)
+OUTPUT=$(jq ". += {bmc: ${IPMIDUMP}}" <<< "${OUTPUT}")
+
 ### lshw output begin ###
 # get lshw classes listed in $CLASSES
 for class in "${CLASSES[@]}"; do
     class_data=$(lshw -json -c ${class})
     OUTPUT=$(jq ". += {${class}: ${class_data}}" <<< "${OUTPUT}")
 done
+
+# set "_id" to the value of the "serial" field
+OUTPUT=$(jq -r '. += {"_id": .system[] | select(.serial) | .serial}' <<< "${OUTPUT}")
 ### lshw output end ###
 
 ### lsblk output begin ###
@@ -51,7 +60,7 @@ done
 export LSBLK=$(lsblk -b -l -d -o PATH,TYPE,SUBSYSTEMS,TRAN,HOTPLUG,SERIAL,SIZE -e7 -e43 -e252 --json)
 
 # get just the block device names. e.g. /dev/sda
-export BLOCK_DEVICES=($(jq '.blockdevices[].path' <<< "${LSBLK}"))
+export BLOCK_DEVICES=($(jq -r '.blockdevices[].path' <<< "${LSBLK}"))
 
 # loop over block devices and find symlinks in /dev/disk that point to the block devices
 for blkdev in "${BLOCK_DEVICES[@]}"; do
@@ -76,6 +85,5 @@ done
 OUTPUT=$(jq ". += ${LSBLK}" <<< "${OUTPUT}")
 ### lsblk output end ###
 
-
-# set "_id" to the value of the "serial" field
-jq -r '. += {"_id": .system[] | select(.serial) | .serial}' <<< "${OUTPUT}"
+# print the entire json document
+jq -r '.' <<< "${OUTPUT}"
