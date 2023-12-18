@@ -104,5 +104,8 @@ done
 OUTPUT=$(jq ". += ${LSBLK}" <<< "${OUTPUT}")
 ### lsblk output end ###
 
+# minify and remove color
+OUTPUT=$(jq -c -M '.' <<< "${OUTPUT}")
+
 # print the entire json document
-jq -r '.' <<< "${OUTPUT}"
+printf '%s' "${OUTPUT}"
