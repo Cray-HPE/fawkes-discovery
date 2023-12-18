@@ -57,27 +57,46 @@ OUTPUT=$(jq -r '. += {"_id": .system[] | select(.serial) | .serial}' <<< "${OUTP
 ### lsblk output begin ###
 # one document with one object for each block device
 # does include USB, does not include loop and network block devices
-export LSBLK=$(lsblk -b -l -d -o PATH,TYPE,SUBSYSTEMS,TRAN,HOTPLUG,SERIAL,SIZE -e7 -e43 -e252 --json)
+export LSBLK=$(lsblk \
+                 -o PATH,TYPE,SUBSYSTEMS,TRAN,HOTPLUG,SERIAL,SIZE \
+                 -b \
+                 -l \
+                 -d \
+                 -e7 \
+                 -e43 \
+                 -e252 \
+                 --json | \
+                  jq '.blockdevices |= map(. + {deviceMapper: .path}) | del(.blockdevices[].path)')
 
 # get just the block device names. e.g. /dev/sda
-export BLOCK_DEVICES=($(jq -r '.blockdevices[].path' <<< "${LSBLK}"))
+export BLOCK_DEVICES=($(jq -r '.blockdevices[].deviceMapper' <<< "${LSBLK}"))
+BLOCK_DEVICES=($( tr ' ' '\n' <<< "${BLOCK_DEVICES[*]}" | sort | uniq))
 
 # loop over block devices and find symlinks in /dev/disk that point to the block devices
 for blkdev in "${BLOCK_DEVICES[@]}"; do
     export blkdev
-    export SYMS=($(find -L /dev/disk/ -samefile "${blkdev}" -printf "%p "))
+    export BY_ID=($(find -L /dev/disk/by-id -samefile "${blkdev}" -printf "%p "))
+    export BY_PATH=($(find -L /dev/disk/by-path -samefile "${blkdev}" -printf "%p "))
 
-    # insert the symlink paths into the existing block device document e.g. /dev/disk/by-path/pci-0000:83:00.0-ata-7.0
-    export count=1
-    for sym in "${SYMS[@]}"; do
+    # create empty arrays for by-id and by-path values
+    LSBLK=$(jq --arg blkdev "${blkdev}" '(.blockdevices[] | select(.deviceMapper == ($blkdev))) += {"byId": []}' <<< "${LSBLK}")
+    LSBLK=$(jq --arg blkdev "${blkdev}" '(.blockdevices[] | select(.deviceMapper == ($blkdev))) += {"byPath": []}' <<< "${LSBLK}")
+
+    # insert the symlink paths into the existing block device document
+    for sym in "${BY_ID[@]}"; do
         export sym
         LSBLK=$(jq \
             --arg sym "${sym}" \
-            --arg count "${count}" \
-            --arg path "${blkdev}" \
-            --arg newpath "path${count}" \
-            '(.blockdevices[] | select(.path == ($path))) += {($newpath): ($sym)}' <<< "${LSBLK}")
-        ((count++))
+            --arg blkdev "${blkdev}" \
+            '(.blockdevices[] | select(.deviceMapper == $blkdev).byId) += [($sym)]' <<< "${LSBLK}")
+    done
+
+    for sym in "${BY_PATH[@]}"; do
+        export sym
+        LSBLK=$(jq \
+            --arg sym "${sym}" \
+            --arg blkdev "${blkdev}" \
+            '(.blockdevices[] | select(.deviceMapper == $blkdev).byPath) += [($sym)]' <<< "${LSBLK}")
     done
 done
 

@@ -10,7 +10,7 @@ bind: ":8080"
 mongoserver: "mongodb-pod:27017"
 
 database: "discovery"
-collection: "lshw"
+collection: "discovery"
 
 ######################
 # Mongo classifiers
