@@ -66,10 +66,10 @@ export LSBLK=$(lsblk \
                  -e43 \
                  -e252 \
                  --json | \
-                  jq '.blockdevices |= map(. + {deviceMapper: .path}) | del(.blockdevices[].path)')
+                  jq '.blockdevices |= map(. + {driverPath: .path}) | del(.blockdevices[].path)')
 
 # get just the block device names. e.g. /dev/sda
-export BLOCK_DEVICES=($(jq -r '.blockdevices[].deviceMapper' <<< "${LSBLK}"))
+export BLOCK_DEVICES=($(jq -r '.blockdevices[].driverPath' <<< "${LSBLK}"))
 BLOCK_DEVICES=($( tr ' ' '\n' <<< "${BLOCK_DEVICES[*]}" | sort | uniq))
 
 # loop over block devices and find symlinks in /dev/disk that point to the block devices
@@ -79,8 +79,8 @@ for blkdev in "${BLOCK_DEVICES[@]}"; do
     export BY_PATH=($(find -L /dev/disk/by-path -samefile "${blkdev}" -printf "%p "))
 
     # create empty arrays for by-id and by-path values
-    LSBLK=$(jq --arg blkdev "${blkdev}" '(.blockdevices[] | select(.deviceMapper == ($blkdev))) += {"byId": []}' <<< "${LSBLK}")
-    LSBLK=$(jq --arg blkdev "${blkdev}" '(.blockdevices[] | select(.deviceMapper == ($blkdev))) += {"byPath": []}' <<< "${LSBLK}")
+    LSBLK=$(jq --arg blkdev "${blkdev}" '(.blockdevices[] | select(.driverPath == ($blkdev))) += {"byId": []}' <<< "${LSBLK}")
+    LSBLK=$(jq --arg blkdev "${blkdev}" '(.blockdevices[] | select(.driverPath == ($blkdev))) += {"byPath": []}' <<< "${LSBLK}")
 
     # insert the symlink paths into the existing block device document
     for sym in "${BY_ID[@]}"; do
@@ -88,7 +88,7 @@ for blkdev in "${BLOCK_DEVICES[@]}"; do
         LSBLK=$(jq \
             --arg sym "${sym}" \
             --arg blkdev "${blkdev}" \
-            '(.blockdevices[] | select(.deviceMapper == $blkdev).byId) += [($sym)]' <<< "${LSBLK}")
+            '(.blockdevices[] | select(.driverPath == $blkdev).byId) += [($sym)]' <<< "${LSBLK}")
     done
 
     for sym in "${BY_PATH[@]}"; do
@@ -96,7 +96,7 @@ for blkdev in "${BLOCK_DEVICES[@]}"; do
         LSBLK=$(jq \
             --arg sym "${sym}" \
             --arg blkdev "${blkdev}" \
-            '(.blockdevices[] | select(.deviceMapper == $blkdev).byPath) += [($sym)]' <<< "${LSBLK}")
+            '(.blockdevices[] | select(.driverPath == $blkdev).byPath) += [($sym)]' <<< "${LSBLK}")
     done
 done
 
