@@ -20,9 +20,9 @@ func main() {
 	// Parse cli flags
 	flag.StringP("bind", "b", ":8080", "Bind address")
 	flag.StringP("mongoserver", "s", "", "Mongo ip:port")
-	flag.StringP("database", "d", "", "Mongo database to use")
-	flag.StringP("collection", "c", "", "Mongo collection to use")
-	flag.StringP("config", "f", "", "Path to configuration directory")
+	flag.StringP("database", "d", "", "Mongo database name")
+	flag.StringP("collection", "c", "", "Mongo collection name")
+	flag.StringP("config", "f", "", "Path to configuration file")
 	flag.StringP("class", "t", "", "Path to class file")
 	flag.Parse()
 
