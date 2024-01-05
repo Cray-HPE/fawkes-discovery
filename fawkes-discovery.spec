@@ -21,7 +21,7 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 Name:          %(echo $NAME)
 License:       MIT License
-Summary:       An http endpoint for bare metal hardware data.
+Summary:       Application for discovering hardware and bmc info on baremetal nodes.
 Version:       %(echo $VERSION)
 Release:       1
 BuildArch:     %(echo $ARCH)
@@ -35,6 +35,7 @@ BuildRequires: pkgconfig(systemd)
 Requires:      podman
 Requires:      podman-cni-config
 Requires:      lshw
+Requires:      lsblk
 
 # helps when installing a program whose unit files makes use of a feature only available in a newer systemd version
 # If the program is installed on its own, it will have to make do with the available features
