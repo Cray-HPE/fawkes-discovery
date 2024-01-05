@@ -121,3 +121,15 @@ curl -s 'http://127.0.0.1:8080/filter?diskCount=3'
 # print the total number of nodes that have 6 disks
 curl -s 'http://127.0.0.1:8080/filter?diskCount=6&count'
 ----
+
+== TODO's
+* cleanup client/fawkes-discovery-client.sh
+** probably involves writing our own client data collectors and not using lshw/lsblk
+* write unit tests
+* use https instead of http
+* create database backup / restore functionality
+* improve logging
+** indicate when/why a specific classifier matches or doesn't match
+* make writing classifiers easier
+** writing mongo aggregation pipelines can be tricky
+* general code cleanup
