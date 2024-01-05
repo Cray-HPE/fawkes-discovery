@@ -1,0 +1,7 @@
+---
+name: fawkes-discovery
+title: fawkes-discovery
+version: true
+prerelease: true
+nav:
+  - modules/ROOT/nav.adoc
