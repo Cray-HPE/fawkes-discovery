@@ -77,9 +77,9 @@ skopeo copy --src-creds=%(echo $ARTIFACTORY_USER:$ARTIFACTORY_TOKEN) --additiona
 skopeo copy --additional-tag %{image_db} docker://%{image_db} docker-archive:%{image_db_tar}
 sed -e 's,@@fawkes-discovery-frontend-image@@,%{image_frontend},' -i deployments/discovery-frontend-template.yml
 sed -e 's,@@fawkes-discovery-db-image@@,%{image_db},' deployments/discovery-database-template.yml > deployments/discovery-database.yml
-sed -e 's,@@mongo-version@@,%{image_db_tag},' -i pod-init/fawkes-discovery-database-setup.sh
-sed -e 's,@@bucket@@,%{bucket},' -i pod-init/fawkes-discovery-frontend-setup.sh
-sed -e 's,@@frontend-version@@,%{image_frontend_tag},' -i pod-init/fawkes-discovery-frontend-setup.sh
+sed -e 's,@@mongo-version@@,%{image_db_tag},' -i init/fawkes-discovery-database-setup.sh
+sed -e 's,@@bucket@@,%{bucket},' -i init/fawkes-discovery-frontend-setup.sh
+sed -e 's,@@frontend-version@@,%{image_frontend_tag},' -i init/fawkes-discovery-frontend-setup.sh
 
 
 %install
@@ -88,12 +88,12 @@ install -D -m 0644 -t %{buildroot}%{_sysconfdir}/%{name} configs/mongo/mongo-ini
 install -D -m 0644 -t %{buildroot}%{_sysconfdir}/%{name} deployments/discovery-database.yml
 install -D -m 0644 -t %{buildroot}%{_sysconfdir}/%{name} deployments/discovery-frontend-template.yml
 install -D -m 0644 -t %{buildroot}%{_sysconfdir}/%{name} classification/fawkes-discovery-classes.json
-install -D -m 0644 -t %{buildroot}%{_unitdir} pod-init/fawkes-discovery-frontend.service
-install -D -m 0644 -t %{buildroot}%{_unitdir} pod-init/fawkes-discovery-database.service
+install -D -m 0644 -t %{buildroot}%{_unitdir} init/fawkes-discovery-frontend.service
+install -D -m 0644 -t %{buildroot}%{_unitdir} init/fawkes-discovery-database.service
 install -D -m 0644 -t %{buildroot}%{_unitdir} client/fawkes-discovery-client.service
 install -D -m 0755 -t %{buildroot}%{_sbindir} client/fawkes-discovery-client.sh
-install -D -m 0755 -t %{buildroot}%{_sbindir} pod-init/fawkes-discovery-frontend-setup.sh
-install -D -m 0755 -t %{buildroot}%{_sbindir} pod-init/fawkes-discovery-database-setup.sh
+install -D -m 0755 -t %{buildroot}%{_sbindir} init/fawkes-discovery-frontend-setup.sh
+install -D -m 0755 -t %{buildroot}%{_sbindir} init/fawkes-discovery-database-setup.sh
 install -D -m 0644 -t %{buildroot}%{imagedir} %{image_frontend_tar}
 install -D -m 0644 -t %{buildroot}%{imagedir} %{image_db_tar}
 install -D -m 0755 -t %{buildroot}%{_sbindir} %{bmcbin}
