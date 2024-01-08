@@ -18,7 +18,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func OpenDBconn(mongoserver string) *mongo.Client {
+func OpenDBconn(mongoserver string) (*mongo.Client, error) {
 	// This commented block logs actions taken on collections.
 	// It's very verbose.
 	// monitor := &event.CommandMonitor{
@@ -33,21 +33,23 @@ func OpenDBconn(mongoserver string) *mongo.Client {
 	clientOptions := options.Client().ApplyURI("mongodb://" + mongoserver)
 	client, err := mongo.Connect(context.Background(), clientOptions)
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("%v\n", err)
+		return client, err
 	}
 
 	err = client.Ping(context.Background(), nil)
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("%v\n", err)
+		return client, err
 	}
-	log.Print("MongoDB connection good.")
-	return client
+	log.Printf("%v\n", "Connected to MongoDB.")
+	return client, err
 }
 
 func CloseDBconn(dbClient *mongo.Client) {
 	err := dbClient.Disconnect(context.Background())
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("%v\n", err)
 	}
 
 	log.Println("Disconnected from MongoDB.")
