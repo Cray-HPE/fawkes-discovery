@@ -37,10 +37,11 @@ func OpenDBconn(mongoserver string) (*mongo.Client, error) {
 		return client, err
 	}
 
-	err = client.Ping(context.Background(), nil)
-	if err != nil {
-		log.Printf("%v\n", err)
-		return client, err
+	pingErr := client.Ping(context.Background(), nil)
+
+	if pingErr != nil {
+		log.Printf("%v\n", pingErr)
+		return client, pingErr
 	}
 	log.Printf("%v\n", "Connected to MongoDB.")
 	return client, err
