@@ -30,8 +30,8 @@ export DB_REGISTRY_PATH="docker.io/library/mongo:${IMAGE_DB_TAG}"
 
 function install_deps {
     sudo mkdir -p /etc/apt/keyrings/
-    sudo curl -fsSL https://download.opensuse.org/repositories/devel:kubic:libcontainers:unstable/Debian_Testing/Release.key   | gpg --dearmor   | sudo tee /etc/apt/keyrings/devel_kubic_libcontainers_unstable.gpg > /dev/null
-    sudo echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/devel_kubic_libcontainers_unstable.gpg]\                                                       https://download.opensuse.org/repositories/devel:kubic:libcontainers:unstable/Debian_Testing/ /"   | sudo tee /etc/apt/sources.list.d/devel:kubic:libcontainers:unstable.list > /dev/null
+    sudo curl -fsSL https://download.opensuse.org/repositories/devel:kubic:libcontainers:unstable/Debian_Testing/Release.key | gpg --dearmor | sudo tee /etc/apt/keyrings/devel_kubic_libcontainers_unstable.gpg > /dev/null
+    sudo echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/devel_kubic_libcontainers_unstable.gpg] https://download.opensuse.org/repositories/devel:kubic:libcontainers:unstable/Debian_Testing/ /" | sudo tee /etc/apt/sources.list.d/devel:kubic:libcontainers:unstable.list > /dev/null
     sudo apt update
     sudo apt purge -y man-db
     sudo apt -y install podman
