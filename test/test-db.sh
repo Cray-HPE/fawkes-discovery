@@ -28,6 +28,12 @@ export DB_TEMPLATE_DIR="test/"
 export IMAGE_DB_TAG=$(gawk -F '=' '/IMAGE_DB_TAG/{gsub("\"", ""); gsub(" ", ""); print $2}' ${JENKINSFILE})
 export DB_REGISTRY_PATH="docker.io/library/mongo:${IMAGE_DB_TAG}"
 
+function install_deps {
+    sudo apt purge -y man-db
+    sudo apt update
+    sudo apt -y install podman
+}
+
 function setup {
     sed -e "s,@@fawkes-discovery-db-image@@,${DB_REGISTRY_PATH}," "${DB_TEMPLATE_DIR}/test-db-deployment-template.yml" \
            > "${DB_TEMPLATE_DIR}/test-db-deployment.yml"
@@ -40,6 +46,7 @@ function teardown {
 
 case $1 in 
     "setup")
+      install_deps
       setup
       ;;
     "teardown")
