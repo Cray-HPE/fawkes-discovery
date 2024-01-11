@@ -31,7 +31,7 @@ export IMAGE_DB_TAG=$(gawk -F '=' '/IMAGE_DB_TAG/{gsub("\"", ""); gsub(" ", "");
 export DB_REGISTRY_PATH="docker.io/library/mongo:${IMAGE_DB_TAG}"
 
 function install_deps {
-    sudo export DEBIAN_FRONTEND=noninteractive
+    sudo dpkg-reconfigure debconf --frontend=noninteractive
     sudo mkdir -p /etc/apt/keyrings/
     sudo curl -fsSL https://download.opensuse.org/repositories/devel:kubic:libcontainers:unstable/Debian_Testing/Release.key | gpg --dearmor | sudo tee /etc/apt/keyrings/devel_kubic_libcontainers_unstable.gpg > /dev/null
     sudo echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/devel_kubic_libcontainers_unstable.gpg] https://download.opensuse.org/repositories/devel:kubic:libcontainers:unstable/Debian_Testing/ /" | sudo tee /etc/apt/sources.list.d/devel:kubic:libcontainers:unstable.list > /dev/null
