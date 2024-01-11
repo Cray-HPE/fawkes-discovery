@@ -69,18 +69,19 @@ pipeline {
                         sh "test/test-db.sh setup"
                     }
                 }
-            }
+
                 stage('Test: All') {
                     steps {
                         sh "go test -timeout 30s discovery/internal/utils"
                     }
                 }
-        }
+
                 stage('Test: Teardown') {
                     steps {
                         sh "test/test-db.sh teardown"
                     }
                 }
+            }
         }
 
         stage('Build: Image') {
