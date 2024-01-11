@@ -47,13 +47,14 @@ func OpenDBconn(mongoserver string) (*mongo.Client, error) {
 	return client, err
 }
 
-func CloseDBconn(dbClient *mongo.Client) {
+func CloseDBconn(dbClient *mongo.Client) error {
 	err := dbClient.Disconnect(context.Background())
 	if err != nil {
 		log.Printf("%v\n", err)
+	} else {
+		log.Println("Disconnected from MongoDB.")
 	}
-
-	log.Println("Disconnected from MongoDB.")
+	return err
 }
 
 func GetMachineByFilter(disco globaldata.Discovery) gin.HandlerFunc {
