@@ -57,7 +57,7 @@ Requires:      lsblk
 # This needs to match what is created for the image
 %define image_frontend artifactory.algol60.net/%{bucket}/%{name}:%{image_frontend_tag}
 %define image_frontend_tar %{name}-%{image_frontend_tag}.tar
-%define image_db_tag 7.0.2
+%define image_db_tag %(echo ${IMAGE_DB_TAG})
 %define image_db docker.io/library/mongo:%{image_db_tag}
 %define image_db_tar %{name}-mongodb-%{image_db_tag}.tar
 %define bmcbin fawkes-client

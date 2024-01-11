@@ -57,9 +57,31 @@ pipeline {
         GO_VERSION = sh(returnStdout: true, script: 'grep -Eo "^go .*" go.mod | cut -d " " -f2').trim()
         IMAGE_VERSION = sh(returnStdout: true, script: "git describe --tags | tr -s '-' '_' | sed 's/^v//'").trim()
         VERSION = sh(returnStdout: true, script: "git describe --tags | tr -s '-' '~' | sed 's/^v//'").trim()
+        IMAGE_DB_TAG = "7.0.2"
     }
 
     stages {
+
+        stage('Test') {
+            stages {
+                stage('Test: Setup') {
+                    steps {
+                        sh "test/test-db.sh setup"
+                    }
+                }
+            }
+                stage('Test: All') {
+                    steps {
+                        sh "go test -timeout 30s discovery/internal/utils"
+                    }
+                }
+        }
+                stage('Test: Teardown') {
+                    steps {
+                        sh "test/test-db.sh teardown"
+                    }
+                }
+        }
 
         stage('Build: Image') {
             steps {
