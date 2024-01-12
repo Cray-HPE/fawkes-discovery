@@ -30,29 +30,16 @@ export DB_TEMPLATE_DIR="test/"
 export IMAGE_DB_TAG=$(gawk -F '=' '/IMAGE_DB_TAG/{gsub("\"", ""); gsub(" ", ""); print $2}' ${JENKINSFILE})
 export DB_REGISTRY_PATH="docker.io/library/mongo:${IMAGE_DB_TAG}"
 
-function install_deps {
-    sudo dpkg-reconfigure debconf --frontend=noninteractive
-    sudo mkdir -p /etc/apt/keyrings/
-    sudo curl -fsSL https://download.opensuse.org/repositories/devel:kubic:libcontainers:unstable/Debian_Testing/Release.key | gpg --dearmor | sudo tee /etc/apt/keyrings/devel_kubic_libcontainers_unstable.gpg > /dev/null
-    sudo echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/devel_kubic_libcontainers_unstable.gpg] https://download.opensuse.org/repositories/devel:kubic:libcontainers:unstable/Debian_Testing/ /" | sudo tee /etc/apt/sources.list.d/devel:kubic:libcontainers:unstable.list > /dev/null
-    sudo apt update
-    sudo apt purge -y man-db
-    sudo apt -y install podman
-}
-
 function setup {
-    sed -e "s,@@fawkes-discovery-db-image@@,${DB_REGISTRY_PATH}," "${DB_TEMPLATE_DIR}/test-db-deployment-template.yml" \
-           > "${DB_TEMPLATE_DIR}/test-db-deployment.yml"
-    podman kube play "${DB_TEMPLATE_DIR}/test-db-deployment.yml"
+    docker run -dit --rm -p 27017:27017 --name mongodb -d "mongo:${IMAGE_DB_TAG}"
 }
 
 function teardown {
-    podman kube down "${DB_TEMPLATE_DIR}/test-db-deployment.yml"
+    docker stop mongodb
 }
 
 case $1 in 
     "setup")
-      install_deps
       setup
       ;;
     "teardown")
