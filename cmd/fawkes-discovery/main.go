@@ -44,6 +44,11 @@ func main() {
 	config.BindPFlags(flag.CommandLine)
 	log.Println("Configuration file used: ", config.ConfigFileUsed())
 
+	dbClient, dbClientErr := utils.OpenDBconn(config.GetString("mongoserver"))
+	if dbClientErr != nil {
+		log.Println(dbClientErr)
+	}
+
 	// Set up variables from config/flags
 	disco := globaldata.Discovery{
 		Bind:           config.GetString("bind"),
@@ -52,7 +57,7 @@ func main() {
 		Collection:     config.GetString("collection"),
 		CollectionOrig: "discoveryOrig",
 		Classfile:      config.GetString("class"),
-		Dbclient:       utils.OpenDBconn(config.GetString("mongoserver")),
+		Dbclient:       dbClient,
 		Router:         gin.Default(),
 	}
 
