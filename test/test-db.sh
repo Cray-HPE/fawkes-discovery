@@ -31,7 +31,7 @@ export IMAGE_DB_TAG=$(gawk -F '=' '/IMAGE_DB_TAG/{gsub("\"", ""); gsub(" ", "");
 export DB_REGISTRY_PATH="docker.io/library/mongo:${IMAGE_DB_TAG}"
 
 function setup {
-    docker run -dit --rm -p 27017:27017 --name mongodb -d "mongo:${IMAGE_DB_TAG}"
+    docker run -dit --rm -p 27017:27017 --name mongodb -d -v ./mongo-init-seed.js:/docker-entrypoint-initdb.d/mongo-init.js:ro "mongo:${IMAGE_DB_TAG}"
 }
 
 function teardown {
