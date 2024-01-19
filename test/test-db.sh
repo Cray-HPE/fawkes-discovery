@@ -24,14 +24,16 @@
 
 set -euo pipefail
 
-export BASE_DIR=$(git rev-parse --show-toplevel)
-export JENKINSFILE="${BASE_DIR}/Jenkinsfile.github"
+export ROOT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )/../" >/dev/null 2>&1 && pwd )"
+export JENKINSFILE="${ROOT_DIR}/Jenkinsfile.github"
 export DB_TEMPLATE_DIR="test/"
-export IMAGE_DB_TAG=$(gawk -F '=' '/IMAGE_DB_TAG/{gsub("\"", ""); gsub(" ", ""); print $2}' ${JENKINSFILE})
+export IMAGE_DB_TAG=$(awk -F '=' '/IMAGE_DB_TAG/{gsub("\"", ""); gsub(" ", ""); print $2}' ${JENKINSFILE})
 export DB_REGISTRY_PATH="docker.io/library/mongo:${IMAGE_DB_TAG}"
 
 function setup {
-    docker run -dit --rm -p 27017:27017 --name mongodb -d -v ./mongo-init-seed.js:/docker-entrypoint-initdb.d/mongo-init.js:ro "mongo:${IMAGE_DB_TAG}"
+    docker run --rm -dit -p 27017:27017 --name mongodb \
+        -v "${ROOT_DIR}"/test/mongo-init:/docker-entrypoint-initdb.d:ro \
+        "mongo:${IMAGE_DB_TAG}"
 }
 
 function teardown {
