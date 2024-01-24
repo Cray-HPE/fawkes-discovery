@@ -34,8 +34,6 @@ BuildRequires: skopeo
 BuildRequires: pkgconfig(systemd)
 Requires:      podman
 Requires:      podman-cni-config
-Requires:      lshw
-Requires:      lsblk
 
 # helps when installing a program whose unit files makes use of a feature only available in a newer systemd version
 # If the program is installed on its own, it will have to make do with the available features
@@ -148,6 +146,8 @@ fi
 
 %package -n fawkes-discovery-client
 Summary: Collects and pushes hardware data for fawkes-discovery.
+Requires:      lshw
+Requires:      lsblk
 
 %{?systemd_ordering}
 %pre -n fawkes-discovery-client
