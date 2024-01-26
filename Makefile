@@ -271,6 +271,8 @@ container_image:
 	docker buildx build \
 		${BUILD_ARGS} \
 		${DOCKER_ARGS} \
+		--build-arg NAME=${NAME} \
+		--build-arg GO_VERSION="${GO_VERSION}" \
 		--cache-to type=local,dest=docker-build-cache  \
 		--platform linux/amd64,linux/arm64 \
 		--builder $$(docker buildx create --platform linux/amd64,linux/arm64) \
@@ -281,9 +283,9 @@ container_image:
 
 	docker buildx build \
 		${BUILD_ARGS} \
-	    ${DOCKER_ARGS} \
-	    --build-arg NAME=${NAME} \
-	    --build-arg GO_VERSION="${GO_VERSION}" \
+		${DOCKER_ARGS} \
+		--build-arg NAME=${NAME} \
+		--build-arg GO_VERSION="${GO_VERSION}" \
 		--cache-from type=local,src=docker-build-cache \
 		--platform linux/amd64 \
 		--pull \
