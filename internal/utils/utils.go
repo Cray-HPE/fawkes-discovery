@@ -122,7 +122,7 @@ func PostMachine(disco globaldata.Discovery) gin.HandlerFunc {
 		body, _ := io.ReadAll(c.Request.Body)
 		collectionOrig := disco.Dbclient.Database(disco.Database).Collection(disco.CollectionOrig)
 
-		currentTime := time.Now().Unix()
+		currentTime := time.Now().UnixMilli()
 
 		// unmarshal json to go map
 		var newdoc map[string]interface{}
