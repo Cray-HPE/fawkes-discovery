@@ -268,11 +268,27 @@ rpm_build:
 	rpmbuild -ba $(BUILD_DIR)/SPECS/$(SPEC_FILE) --target ${ARCH} --define "_topdir $(BUILD_DIR)"
 
 container_image:
-	docker build --pull \
+	docker buildx build \
+		${BUILD_ARGS} \
+		${DOCKER_ARGS} \
+		--cache-to type=local,dest=docker-build-cache  \
+		--platform linux/amd64,linux/arm64 \
+		--builder $$(docker buildx create --platform linux/amd64,linux/arm64) \
+		--pull \
+		 .
+
+	docker buildx create --use
+
+	docker buildx build \
+		${BUILD_ARGS} \
 	    ${DOCKER_ARGS} \
 	    --build-arg NAME=${NAME} \
 	    --build-arg GO_VERSION="${GO_VERSION}" \
-	    -t ${NAME}:latest \
-	    -t ${NAME}:${IMAGE_VERSION} \
-	    -t ${NAME}:${IMAGE_VERSION}-${TIMESTAMP} \
-	    .
+		--cache-from type=local,src=docker-build-cache \
+		--platform linux/amd64 \
+		--pull \
+		--load \
+		-t ${NAME}:latest \
+		-t ${NAME}:${IMAGE_VERSION} \
+		-t ${NAME}:${IMAGE_VERSION}-${TIMESTAMP} \
+		.

@@ -57,6 +57,7 @@ pipeline {
         GO_VERSION = sh(returnStdout: true, script: 'grep -Eo "^go .*" go.mod | cut -d " " -f2').trim()
         IMAGE_VERSION = sh(returnStdout: true, script: "git describe --tags | tr -s '-' '_' | sed 's/^v//'").trim()
         VERSION = sh(returnStdout: true, script: "git describe --tags | tr -s '-' '~' | sed 's/^v//'").trim()
+        MULTI_ARCH = 1
     }
 
     stages {
@@ -69,7 +70,7 @@ pipeline {
 
         stage('Publish: Image') {
             steps {
-                publishCsmDockerImage(image: env.NAME, tag: env.IMAGE_VERSION, artifactoryRepo: 'fawkes-docker', isStable: isStable)
+                publishCsmDockerImage(image: env.NAME, multiArch: env.MULTI_ARCH, tag: env.IMAGE_VERSION, artifactoryRepo: 'fawkes-docker', isStable: isStable)
             }
         }
 
