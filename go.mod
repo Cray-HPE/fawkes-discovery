@@ -1,6 +1,6 @@
 module discovery
 
-go 1.20
+go 1.21.6
 
 require (
 	github.com/fsnotify/fsnotify v1.6.0
