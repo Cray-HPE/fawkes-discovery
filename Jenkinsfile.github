@@ -69,6 +69,10 @@ pipeline {
         }
 
         stage('Publish: Image') {
+            environment {
+                BUILD_ARGS = "--build-arg 'GO_VERSION=${GO_VERSION}'"
+            }
+            
             steps {
                 publishCsmDockerImage(image: env.NAME, multiArch: env.MULTI_ARCH, tag: env.IMAGE_VERSION, artifactoryRepo: 'fawkes-docker', isStable: isStable)
             }
