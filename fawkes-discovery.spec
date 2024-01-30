@@ -71,8 +71,8 @@ echo bucket: %{bucket} tag: %{image_frontend_tag} current_branch: %{current_bran
 timeout 15m sh -c 'until skopeo inspect --creds=%(echo $ARTIFACTORY_USER:$ARTIFACTORY_TOKEN) docker://%{image_frontend}; do sleep 10; done'
 
 %build
-skopeo copy --src-creds=%(echo $ARTIFACTORY_USER:$ARTIFACTORY_TOKEN) --additional-tag %{image_frontend} docker://%{image_frontend} docker-archive:%{image_frontend_tar}
 skopeo copy --additional-tag %{image_db} docker://%{image_db} docker-archive:%{image_db_tar}
+skopeo copy --src-creds=%(echo $ARTIFACTORY_USER:$ARTIFACTORY_TOKEN) --additional-tag %{image_frontend} docker://%{image_frontend} docker-archive:%{image_frontend_tar}
 sed -e 's,@@fawkes-discovery-frontend-image@@,%{image_frontend},' -i deployments/discovery-frontend-template.yml
 sed -e 's,@@fawkes-discovery-db-image@@,%{image_db},' deployments/discovery-database-template.yml > deployments/discovery-database.yml
 sed -e 's,@@mongo-version@@,%{image_db_tag},' -i init/fawkes-discovery-database-setup.sh
