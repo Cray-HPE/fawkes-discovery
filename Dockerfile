@@ -23,12 +23,13 @@
 ARG         GO_VERSION
 FROM        artifactory.algol60.net/csm-docker/stable/csm-docker-sle-go:${GO_VERSION} as builder
 ARG         NAME
+ARG         TARGETARCH
 WORKDIR     /workspace
 COPY        . ./
 
 RUN         CGO_ENABLED=0 \
             GOOS=linux \
-            GOARCH=amd64 \
+            GOARCH=$TARGETARCH \
             GO111MODULE=on \
             make ${NAME}
 
