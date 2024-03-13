@@ -147,7 +147,7 @@ fi
 %package -n fawkes-discovery-client
 Summary: Collects and pushes hardware data for fawkes-discovery.
 Requires:      lshw
-Requires:      lsblk
+Requires:      util-linux-systemd
 
 %{?systemd_ordering}
 %pre -n fawkes-discovery-client
